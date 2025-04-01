@@ -1,5 +1,5 @@
 using MCPP.Net;
-
+using MCPP.Net.Services;
 using ModelContextProtocol.Server;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
@@ -15,6 +15,10 @@ builder.Services.AddSwaggerGen();
 
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
+
+// 注册Swagger导入服务
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<SwaggerImportService>();
 
 builder.Services.AddMcpServer().WithToolsFromAssembly();
 
