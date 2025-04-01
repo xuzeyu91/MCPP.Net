@@ -6,14 +6,14 @@ namespace MCPP.Net.Controllers
 {
     [ApiController]
     [Route("api/[controller]/[action]")]
-    public class SwaggerImportController : ControllerBase
+    public class ImportController : ControllerBase
     {
         private readonly SwaggerImportService _swaggerImportService;
-        private readonly ILogger<SwaggerImportController> _logger;
+        private readonly ILogger<ImportController> _logger;
 
-        public SwaggerImportController(
+        public ImportController(
             SwaggerImportService swaggerImportService,
-            ILogger<SwaggerImportController> logger)
+            ILogger<ImportController> logger)
         {
             _swaggerImportService = swaggerImportService;
             _logger = logger;

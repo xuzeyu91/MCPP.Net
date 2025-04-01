@@ -4,14 +4,14 @@
         <name>MCPP.Net</name>
     </assembly>
     <members>
-        <member name="M:MCPP.Net.Controllers.SwaggerImportController.ImportSwaggerApi(MCPP.Net.Models.SwaggerImportRequest)">
+        <member name="M:MCPP.Net.Controllers.ImportController.ImportSwaggerApi(MCPP.Net.Models.SwaggerImportRequest)">
             <summary>
             导入Swagger API并动态注册为MCP工具
             </summary>
             <param name="request">导入请求参数</param>
             <returns>导入结果</returns>
         </member>
-        <member name="M:MCPP.Net.Controllers.SwaggerImportController.GetImportedTools">
+        <member name="M:MCPP.Net.Controllers.ImportController.GetImportedTools">
             <summary>
             获取当前已导入的所有API工具
             </summary>
