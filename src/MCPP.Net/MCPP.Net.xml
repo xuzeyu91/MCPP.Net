@@ -4,7 +4,12 @@
         <name>MCPP.Net</name>
     </assembly>
     <members>
-        <member name="M:MCPP.Net.Controllers.ImportController.ImportSwaggerApi(MCPP.Net.Models.SwaggerImportRequest)">
+        <member name="T:MCPP.Net.Controllers.ImportController">
+            <summary>
+            Swagger导入API控制器
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Import(MCPP.Net.Models.SwaggerImportRequest)">
             <summary>
             导入Swagger API并动态注册为MCP工具
             </summary>

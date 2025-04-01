@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MCPP.Net.Controllers
 {
+    /// <summary>
+    /// Swagger导入API控制器
+    /// </summary>
     [ApiController]
     [Route("api/[controller]/[action]")]
     public class ImportController : ControllerBase
@@ -19,13 +22,18 @@ namespace MCPP.Net.Controllers
             _logger = logger;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Test()
+        {
+            return Ok("hello world");
+        }
         /// <summary>
         /// 导入Swagger API并动态注册为MCP工具
         /// </summary>
         /// <param name="request">导入请求参数</param>
         /// <returns>导入结果</returns>
         [HttpPost]
-        public async Task<IActionResult> ImportSwaggerApi([FromBody] SwaggerImportRequest request)
+        public async Task<IActionResult> Import([FromBody] SwaggerImportRequest request)
         {
             try
             {

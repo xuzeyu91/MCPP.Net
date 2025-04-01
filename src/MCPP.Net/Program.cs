@@ -13,10 +13,7 @@ builder.Services.AddControllers();
 
 // 注册Swagger服务
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MCPP.Net API", Version = "v1" });
-});
+builder.Services.AddSwaggerGen();
 
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
