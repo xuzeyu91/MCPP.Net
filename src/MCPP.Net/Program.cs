@@ -1,7 +1,5 @@
 using MCPP.Net;
-using MCPP.Net.Services;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
+
 using ModelContextProtocol.Server;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
@@ -17,7 +15,6 @@ builder.Services.AddSwaggerGen();
 
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
-builder.Services.AddSingleton<SwaggerImportService>();
 
 builder.Services.AddMcpServer().WithToolsFromAssembly();
 

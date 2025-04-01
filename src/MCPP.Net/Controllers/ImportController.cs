@@ -1,5 +1,5 @@
 using MCPP.Net.Models;
-using MCPP.Net.Services;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace MCPP.Net.Controllers
@@ -11,14 +11,11 @@ namespace MCPP.Net.Controllers
     [Route("api/[controller]/[action]")]
     public class ImportController : ControllerBase
     {
-        private readonly SwaggerImportService _swaggerImportService;
         private readonly ILogger<ImportController> _logger;
 
         public ImportController(
-            SwaggerImportService swaggerImportService,
             ILogger<ImportController> logger)
         {
-            _swaggerImportService = swaggerImportService;
             _logger = logger;
         }
 
@@ -39,12 +36,8 @@ namespace MCPP.Net.Controllers
             {
                 _logger.LogInformation("开始导入Swagger API: {Url}", request.SwaggerUrl);
                 
-                var result = await _swaggerImportService.ImportAndRegisterToolsAsync(
-                    request.SwaggerUrl, 
-                    request.NameSpace, 
-                    request.ClassName);
                 
-                return Ok(result);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -62,8 +55,8 @@ namespace MCPP.Net.Controllers
         {
             try
             {
-                var tools = _swaggerImportService.GetImportedTools();
-                return Ok(tools);
+
+                return Ok();
             }
             catch (Exception ex)
             {

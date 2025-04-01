@@ -105,59 +105,6 @@
             Swagger来源
             </summary>
         </member>
-        <member name="T:MCPP.Net.Services.SwaggerImportExtensions">
-            <summary>
-            Swagger导入服务的扩展方法
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportExtensions.ImportAndRegisterToolsAsync(MCPP.Net.Services.SwaggerImportService,System.String,System.String,System.String)">
-            <summary>
-            导入Swagger API并注册为MCP工具
-            </summary>
-            <param name="service">Swagger导入服务</param>
-            <param name="swaggerUrl">Swagger文档URL或本地路径</param>
-            <param name="nameSpace">生成类的命名空间</param>
-            <param name="className">生成的类名</param>
-            <returns>导入结果</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportExtensions.GetImportedTools(MCPP.Net.Services.SwaggerImportService)">
-            <summary>
-            获取所有已导入的API工具
-            </summary>
-            <param name="service">Swagger导入服务</param>
-            <returns>已导入的工具列表</returns>
-        </member>
-        <member name="T:MCPP.Net.Services.SwaggerImportService">
-            <summary>
-            从Swagger定义导入API到MCP服务器的服务
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.ImportFromSwaggerAsync(System.String)">
-            <summary>
-            从Swagger JSON或YAML文件导入API
-            </summary>
-            <param name="swaggerContent">Swagger文件内容</param>
-            <returns>导入的API数量</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.ImportFromOpenApiDocumentAsync(Microsoft.OpenApi.Models.OpenApiDocument)">
-            <summary>
-            从OpenApiDocument导入API
-            </summary>
-            <param name="document">OpenApi文档</param>
-            <returns>导入的API数量</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.DefineApiMethod(System.Reflection.Emit.TypeBuilder,Microsoft.OpenApi.Models.OpenApiOperation,System.String,System.String,System.String)">
-            <summary>
-            定义API方法
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.ImportFromUrlAsync(System.String)">
-            <summary>
-            从URL导入Swagger定义
-            </summary>
-            <param name="url">Swagger定义URL</param>
-            <returns>导入的API数量</returns>
-        </member>
         <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
             <summary>
             MCP服务器方法注册接口
