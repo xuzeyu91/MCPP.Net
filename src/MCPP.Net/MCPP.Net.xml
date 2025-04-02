@@ -1,0 +1,300 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MCPP.Net</name>
+    </assembly>
+    <members>
+        <member name="T:MCPP.Net.Controllers.ImportController">
+            <summary>
+            Swagger导入API控制器
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Import(MCPP.Net.Models.SwaggerImportRequest)">
+            <summary>
+            导入Swagger API并动态注册为MCP工具
+            </summary>
+            <param name="request">导入请求参数</param>
+            <returns>导入结果</returns>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.GetImportedTools">
+            <summary>
+            获取当前已导入的所有API工具
+            </summary>
+            <returns>已导入的API工具列表</returns>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.DeleteImportedTool(System.String,System.String)">
+            <summary>
+            删除已导入的API工具
+            </summary>
+            <param name="nameSpace">工具命名空间</param>
+            <param name="className">类名</param>
+            <returns>操作结果</returns>
+        </member>
+        <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
+            <summary>
+            Sets up endpoints for handling MCP HTTP Streaming transport.
+            </summary>
+            <param name="endpoints">The web application to attach MCP HTTP endpoints.</param>
+            <param name="runSession">Provides an optional asynchronous callback for handling new MCP sessions.</param>
+            <returns>Returns a builder for configuring additional endpoint conventions like authorization policies.</returns>
+        </member>
+        <member name="T:MCPP.Net.Models.SwaggerImportRequest">
+            <summary>
+            Swagger导入请求
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportRequest.SwaggerUrl">
+            <summary>
+            Swagger文档URL或本地路径
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportRequest.NameSpace">
+            <summary>
+            生成类的命名空间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportRequest.ClassName">
+            <summary>
+            生成的类名
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.SwaggerImportResult">
+            <summary>
+            Swagger导入结果
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportResult.Success">
+            <summary>
+            导入是否成功
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportResult.ApiCount">
+            <summary>
+            导入的API数量
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportResult.ToolClassName">
+            <summary>
+            工具类名称
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportResult.ImportedApis">
+            <summary>
+            导入的API名称列表
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.ImportedTool">
+            <summary>
+            已导入的API工具信息
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.NameSpace">
+            <summary>
+            工具命名空间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.ClassName">
+            <summary>
+            工具类名
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.ApiCount">
+            <summary>
+            API数量
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.ImportDate">
+            <summary>
+            导入日期
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.SwaggerSource">
+            <summary>
+            Swagger来源
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Services.ImportedToolsService">
+            <summary>
+            已导入工具服务
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.GetImportedTools">
+            <summary>
+            获取已导入的工具列表
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.AddImportedTool(MCPP.Net.Models.ImportedTool)">
+            <summary>
+            添加导入的工具信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.LoadCompiledTool(System.String,System.String)">
+            <summary>
+            根据命名空间和类名加载已编译的工具
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.SaveImportedTools">
+            <summary>
+            保存工具信息到文件
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.LoadImportedTools">
+            <summary>
+            从文件加载工具信息
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Services.SwaggerImportService">
+            <summary>
+            Swagger导入服务
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.ImportSwaggerAsync(MCPP.Net.Models.SwaggerImportRequest)">
+            <summary>
+            导入Swagger文档并生成MCP工具
+            </summary>
+            <param name="request">导入请求</param>
+            <returns>导入结果</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GetSwaggerJsonAsync(System.String)">
+            <summary>
+            获取Swagger JSON内容
+            </summary>
+            <param name="swaggerUrlOrPath">Swagger URL或本地文件路径</param>
+            <returns>Swagger JSON内容</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateDynamicToolType(Newtonsoft.Json.Linq.JObject,MCPP.Net.Models.SwaggerImportRequest,System.String)">
+            <summary>
+            生成动态工具类型
+            </summary>
+            <param name="swaggerDoc">Swagger文档对象</param>
+            <param name="request">导入请求</param>
+            <param name="baseUrl">API基础URL</param>
+            <returns>生成的动态类型</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(System.Reflection.Emit.TypeBuilder,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
+            <summary>
+            创建动态方法
+            </summary>
+            <param name="typeBuilder">TypeBuilder</param>
+            <param name="operationId">操作ID</param>
+            <param name="path">API路径</param>
+            <param name="httpMethod">HTTP方法</param>
+            <param name="summary">摘要</param>
+            <param name="description">描述</param>
+            <param name="operation">操作定义</param>
+            <param name="baseUrl">API基础URL</param>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeMethodName(System.String)">
+            <summary>
+            规范化方法名
+            </summary>
+            <param name="operationId">操作ID</param>
+            <returns>规范化的方法名</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeParameterName(System.String)">
+            <summary>
+            规范化参数名
+            </summary>
+            <param name="paramName">参数名</param>
+            <returns>规范化的参数名</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.RegisterToolMethods(System.Type)">
+            <summary>
+            注册工具方法到MCP服务
+            </summary>
+            <param name="toolType">工具类型</param>
+            <returns>已注册的方法名列表</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.SaveSwaggerDefinition(MCPP.Net.Models.SwaggerImportRequest,System.String)">
+            <summary>
+            保存Swagger定义
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.LoadSavedSwaggerDefinitions">
+            <summary>
+            加载已保存的Swagger定义
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GetImportedTools">
+            <summary>
+            获取所有已导入的工具
+            </summary>
+            <returns>已导入的工具列表</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GetDynamicToolTypes">
+            <summary>
+            获取所有已加载的动态工具类型
+            </summary>
+            <returns>已加载的工具类型列表</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.DeleteImportedTool(System.String,System.String)">
+            <summary>
+            删除已导入的工具
+            </summary>
+            <param name="nameSpace">工具命名空间</param>
+            <param name="className">类名</param>
+            <returns>是否删除成功</returns>
+        </member>
+        <member name="T:MCPP.Net.Services.SwaggerStorageItem">
+            <summary>
+            Swagger存储项
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.Request">
+            <summary>
+            导入请求
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.SwaggerJson">
+            <summary>
+            Swagger JSON内容
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.ImportDate">
+            <summary>
+            导入日期
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.SwaggerImportExtensions">
+            <summary>
+            MCP Server Builder的Swagger导入扩展
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.SwaggerImportExtensions.WithSwaggerTools(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{System.Type})">
+            <summary>
+            添加动态生成的Swagger工具类型
+            </summary>
+            <param name="builder">MCP服务器构建器</param>
+            <param name="dynamicToolTypes">动态生成的工具类型列表</param>
+            <returns>MCP服务器构建器</returns>
+        </member>
+        <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
+            <summary>
+            MCP服务器方法注册接口
+            </summary>
+        </member>
+        <member name="M:ModelContextProtocol.Server.IMcpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+            <summary>
+            添加方法到MCP服务器
+            </summary>
+            <param name="methodInfo">方法信息</param>
+        </member>
+        <member name="T:ModelContextProtocol.Server.McpServerMethodRegistry">
+            <summary>
+            MCP服务器方法注册实现
+            </summary>
+        </member>
+        <member name="M:ModelContextProtocol.Server.McpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+            <summary>
+            添加方法到MCP服务器
+            </summary>
+            <param name="methodInfo">方法信息</param>
+        </member>
+        <member name="M:ModelContextProtocol.Server.McpServerMethodRegistry.GetRegisteredMethods">
+            <summary>
+            获取已注册的所有方法
+            </summary>
+            <returns>已注册的方法列表</returns>
+        </member>
+    </members>
+</doc>

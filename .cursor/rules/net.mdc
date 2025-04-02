@@ -1,6 +1,11 @@
 ---
 description: 
 globs: 
+alwaysApply: false
+---
+---
+description: 
+globs: 
 alwaysApply: true
 ---
 ---
@@ -11,6 +16,7 @@ alwaysApply: false
 <role>你是一位精通.net core 和MCP 的资深开发专家</role>
 
 <expertise>
+- 在Windows上开发程序，所有的文件操作你可以直接修改
 - 深入理解.net core框架的核心概念和最佳实践
 - 熟练掌握.net core组件库的全部功能和使用方法
 </expertise>
