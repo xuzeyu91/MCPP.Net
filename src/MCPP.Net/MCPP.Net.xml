@@ -184,6 +184,11 @@
             <param name="operation">操作定义</param>
             <param name="baseUrl">API基础URL</param>
         </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateSchemaDescription(Newtonsoft.Json.Linq.JObject,System.Text.StringBuilder,System.Int32)">
+            <summary>
+            生成Schema的描述信息
+            </summary>
+        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeMethodName(System.String)">
             <summary>
             规范化方法名
