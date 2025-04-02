@@ -19,16 +19,30 @@ namespace MCPP.Net.Services
         private readonly ILogger<SwaggerImportService> _logger;
         private readonly IMcpServerMethodRegistry _methodRegistry;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IWebHostEnvironment _hostEnvironment;
         private static readonly Dictionary<string, ImportedTool> _importedTools = new Dictionary<string, ImportedTool>();
+        private readonly string _storageDirectory;
 
         public SwaggerImportService(
             ILogger<SwaggerImportService> logger,
             IMcpServerMethodRegistry methodRegistry,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IWebHostEnvironment hostEnvironment)
         {
             _logger = logger;
             _methodRegistry = methodRegistry;
             _httpClientFactory = httpClientFactory;
+            _hostEnvironment = hostEnvironment;
+            _storageDirectory = Path.Combine(_hostEnvironment.ContentRootPath, "ImportedSwaggers");
+            
+            // 确保存储目录存在
+            if (!Directory.Exists(_storageDirectory))
+            {
+                Directory.CreateDirectory(_storageDirectory);
+            }
+            
+            // 加载已保存的Swagger定义
+            LoadSavedSwaggerDefinitions();
         }
 
         /// <summary>
@@ -86,6 +100,9 @@ namespace MCPP.Net.Services
             {
                 _importedTools.Add(key, importedTool);
             }
+            
+            // 保存Swagger定义
+            SaveSwaggerDefinition(request, swaggerJson);
 
             // 6. 返回导入结果
             return new SwaggerImportResult
@@ -451,6 +468,112 @@ namespace MCPP.Net.Services
         }
 
         /// <summary>
+        /// 保存Swagger定义
+        /// </summary>
+        private void SaveSwaggerDefinition(SwaggerImportRequest request, string swaggerJson)
+        {
+            try
+            {
+                string fileName = $"{request.NameSpace}.{request.ClassName}.json";
+                string filePath = Path.Combine(_storageDirectory, fileName);
+                
+                // 创建包含swagger定义和请求信息的完整存储对象
+                var storageObject = new SwaggerStorageItem
+                {
+                    Request = request,
+                    SwaggerJson = swaggerJson,
+                    ImportDate = DateTime.Now
+                };
+                
+                string storageJson = JsonConvert.SerializeObject(storageObject, Formatting.Indented);
+                File.WriteAllText(filePath, storageJson);
+                
+                _logger.LogInformation("已保存Swagger定义: {FilePath}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "保存Swagger定义失败: {Message}", ex.Message);
+            }
+        }
+        
+        /// <summary>
+        /// 加载已保存的Swagger定义
+        /// </summary>
+        private void LoadSavedSwaggerDefinitions()
+        {
+            try
+            {
+                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
+                _logger.LogInformation("找到 {Count} 个已保存的Swagger定义", swaggerFiles.Length);
+                
+                foreach (var file in swaggerFiles)
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(file);
+                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
+                        
+                        if (storageItem != null)
+                        {
+                            _logger.LogInformation("加载Swagger定义: {NameSpace}.{ClassName}", 
+                                storageItem.Request.NameSpace, storageItem.Request.ClassName);
+                            
+                            // 解析JSON并注册工具
+                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
+                            
+                            // 获取服务器基础URL
+                            string baseUrl = "";
+                            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+                            {
+                                JArray servers = (JArray)swaggerDoc["servers"]!;
+                                if (servers.Count > 0 && servers[0]["url"] != null)
+                                {
+                                    baseUrl = servers[0]["url"]!.ToString();
+                                }
+                            }
+                            
+                            // 动态生成API工具类
+                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
+                            
+                            // 注册工具方法到MCP服务
+                            List<string> registeredMethods = RegisterToolMethods(toolType);
+                            
+                            // 记录导入工具信息
+                            var importedTool = new ImportedTool
+                            {
+                                NameSpace = storageItem.Request.NameSpace,
+                                ClassName = storageItem.Request.ClassName,
+                                ApiCount = registeredMethods.Count,
+                                ImportDate = storageItem.ImportDate,
+                                SwaggerSource = storageItem.Request.SwaggerUrl
+                            };
+                            
+                            string key = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}";
+                            if (_importedTools.ContainsKey(key))
+                            {
+                                _importedTools[key] = importedTool;
+                            }
+                            else
+                            {
+                                _importedTools.Add(key, importedTool);
+                            }
+                            
+                            _logger.LogInformation("成功加载并注册工具: {Key}，{Count}个API", key, registeredMethods.Count);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "加载Swagger定义失败: {File}, {Message}", Path.GetFileName(file), ex.Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "加载已保存的Swagger定义失败: {Message}", ex.Message);
+            }
+        }
+
+        /// <summary>
         /// 获取所有已导入的工具
         /// </summary>
         /// <returns>已导入的工具列表</returns>
@@ -458,5 +581,66 @@ namespace MCPP.Net.Services
         {
             return _importedTools.Values.ToList();
         }
+        
+        /// <summary>
+        /// 删除已导入的工具
+        /// </summary>
+        /// <param name="nameSpace">工具命名空间</param>
+        /// <param name="className">类名</param>
+        /// <returns>是否删除成功</returns>
+        public bool DeleteImportedTool(string nameSpace, string className)
+        {
+            string key = $"{nameSpace}.{className}";
+            
+            // 检查工具是否存在
+            if (!_importedTools.ContainsKey(key))
+            {
+                _logger.LogWarning("尝试删除不存在的工具: {Key}", key);
+                return false;
+            }
+            
+            try
+            {
+                // 删除存储的JSON文件
+                string filePath = Path.Combine(_storageDirectory, $"{key}.json");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    _logger.LogInformation("已删除工具定义文件: {FilePath}", filePath);
+                }
+                
+                // 从字典中移除记录
+                _importedTools.Remove(key);
+                
+                _logger.LogInformation("已成功删除工具: {Key}", key);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "删除工具失败: {Key}, {Message}", key, ex.Message);
+                throw;
+            }
+        }
     }
-} 
+    
+    /// <summary>
+    /// Swagger存储项
+    /// </summary>
+    public class SwaggerStorageItem
+    {
+        /// <summary>
+        /// 导入请求
+        /// </summary>
+        public SwaggerImportRequest Request { get; set; } = new SwaggerImportRequest();
+        
+        /// <summary>
+        /// Swagger JSON内容
+        /// </summary>
+        public string SwaggerJson { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 导入日期
+        /// </summary>
+        public DateTime ImportDate { get; set; }
+    }
+}

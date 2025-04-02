@@ -68,5 +68,33 @@ namespace MCPP.Net.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+        
+        /// <summary>
+        /// 删除已导入的API工具
+        /// </summary>
+        /// <param name="nameSpace">工具命名空间</param>
+        /// <param name="className">类名</param>
+        /// <returns>操作结果</returns>
+        [HttpDelete]
+        public IActionResult DeleteImportedTool(string nameSpace, string className)
+        {
+            try
+            {
+                bool result = _importService.DeleteImportedTool(nameSpace, className);
+                if (result)
+                {
+                    return Ok(new { success = true, message = $"已删除工具: {nameSpace}.{className}" });
+                }
+                else
+                {
+                    return NotFound(new { success = false, message = $"未找到工具: {nameSpace}.{className}" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "删除已导入工具失败: {Message}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 } 

@@ -24,6 +24,7 @@ builder.Services.AddMcpServer().WithToolsFromAssembly();
 
 var app = builder.Build();
 
+// Swagger导入服务已通过构造函数自动加载已保存的工具定义
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

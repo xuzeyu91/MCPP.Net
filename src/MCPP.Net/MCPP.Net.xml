@@ -22,6 +22,14 @@
             </summary>
             <returns>已导入的API工具列表</returns>
         </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.DeleteImportedTool(System.String,System.String)">
+            <summary>
+            删除已导入的API工具
+            </summary>
+            <param name="nameSpace">工具命名空间</param>
+            <param name="className">类名</param>
+            <returns>操作结果</returns>
+        </member>
         <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
             <summary>
             Sets up endpoints for handling MCP HTTP Streaming transport.
@@ -197,11 +205,49 @@
             <param name="toolType">工具类型</param>
             <returns>已注册的方法名列表</returns>
         </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.SaveSwaggerDefinition(MCPP.Net.Models.SwaggerImportRequest,System.String)">
+            <summary>
+            保存Swagger定义
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.LoadSavedSwaggerDefinitions">
+            <summary>
+            加载已保存的Swagger定义
+            </summary>
+        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.GetImportedTools">
             <summary>
             获取所有已导入的工具
             </summary>
             <returns>已导入的工具列表</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.DeleteImportedTool(System.String,System.String)">
+            <summary>
+            删除已导入的工具
+            </summary>
+            <param name="nameSpace">工具命名空间</param>
+            <param name="className">类名</param>
+            <returns>是否删除成功</returns>
+        </member>
+        <member name="T:MCPP.Net.Services.SwaggerStorageItem">
+            <summary>
+            Swagger存储项
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.Request">
+            <summary>
+            导入请求
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.SwaggerJson">
+            <summary>
+            Swagger JSON内容
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Services.SwaggerStorageItem.ImportDate">
+            <summary>
+            导入日期
+            </summary>
         </member>
         <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
             <summary>
