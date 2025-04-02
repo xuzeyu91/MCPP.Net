@@ -489,6 +489,11 @@ namespace MCPP.Net.Services
                 File.WriteAllText(filePath, storageJson);
                 
                 _logger.LogInformation("已保存Swagger定义: {FilePath}", filePath);
+                
+                // TODO: 实现将动态生成的类型编译为DLL的功能
+                // 这需要使用CodeDOM或Roslyn编译器来实现
+                // 可以在这里将Swagger对象编译为DLL并保存到ImportedTools目录
+                // 然后通过ImportedToolsService来加载它
             }
             catch (Exception ex)
             {
@@ -580,6 +585,59 @@ namespace MCPP.Net.Services
         public IReadOnlyList<ImportedTool> GetImportedTools()
         {
             return _importedTools.Values.ToList();
+        }
+        
+        /// <summary>
+        /// 获取所有已加载的动态工具类型
+        /// </summary>
+        /// <returns>已加载的工具类型列表</returns>
+        public List<Type> GetDynamicToolTypes()
+        {
+            List<Type> toolTypes = new List<Type>();
+            
+            try
+            {
+                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
+                foreach (var file in swaggerFiles)
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(file);
+                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
+                        
+                        if (storageItem != null)
+                        {
+                            // 解析JSON并创建工具类型
+                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
+                            
+                            // 获取服务器基础URL
+                            string baseUrl = "";
+                            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+                            {
+                                JArray servers = (JArray)swaggerDoc["servers"]!;
+                                if (servers.Count > 0 && servers[0]["url"] != null)
+                                {
+                                    baseUrl = servers[0]["url"]!.ToString();
+                                }
+                            }
+                            
+                            // 创建工具类型
+                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
+                            toolTypes.Add(toolType);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "加载工具类型失败: {File}, {Message}", Path.GetFileName(file), ex.Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取动态工具类型失败: {Message}", ex.Message);
+            }
+            
+            return toolTypes;
         }
         
         /// <summary>

@@ -221,6 +221,12 @@
             </summary>
             <returns>已导入的工具列表</returns>
         </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.GetDynamicToolTypes">
+            <summary>
+            获取所有已加载的动态工具类型
+            </summary>
+            <returns>已加载的工具类型列表</returns>
+        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.DeleteImportedTool(System.String,System.String)">
             <summary>
             删除已导入的工具
@@ -248,6 +254,19 @@
             <summary>
             导入日期
             </summary>
+        </member>
+        <member name="T:MCPP.Net.SwaggerImportExtensions">
+            <summary>
+            MCP Server Builder的Swagger导入扩展
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.SwaggerImportExtensions.WithSwaggerTools(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder,System.Collections.Generic.IEnumerable{System.Type})">
+            <summary>
+            添加动态生成的Swagger工具类型
+            </summary>
+            <param name="builder">MCP服务器构建器</param>
+            <param name="dynamicToolTypes">动态生成的工具类型列表</param>
+            <returns>MCP服务器构建器</returns>
         </member>
         <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
             <summary>
