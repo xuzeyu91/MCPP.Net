@@ -22,11 +22,6 @@ namespace MCPP.Net.Controllers
             _importService = importService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Test()
-        {
-            return Ok("hello world");
-        }
         /// <summary>
         /// 导入Swagger API并动态注册为MCP工具
         /// </summary>
