@@ -181,7 +181,8 @@ namespace MCPP.Net.Services
                     string httpMethod = operationPair.Key.ToUpper();
                     JObject operation = (JObject)operationPair.Value!;
 
-                    string operationId = operation["operationId"]?.ToString() ?? $"Operation{methodCount++}";
+                    // 使用namespace + class + path生成operationId
+                    string operationId = $"{request.NameSpace}.{request.ClassName}.{path.Replace("/", "_").Trim('_')}";
                     string summary = operation["summary"]?.ToString() ?? $"HTTP {httpMethod} {path}";
                     string description = operation["description"]?.ToString() ?? summary;
 
