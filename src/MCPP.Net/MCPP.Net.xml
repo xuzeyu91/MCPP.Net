@@ -181,11 +181,12 @@
             <param name="baseUrl">API基础URL</param>
             <returns>生成的动态类型</returns>
         </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(System.Reflection.Emit.TypeBuilder,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
+        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
             <summary>
             创建动态方法
             </summary>
-            <param name="typeBuilder">TypeBuilder</param>
+            <param name="moduleDefinition">模块定义</param>
+            <param name="typeDefinition">类型定义</param>
             <param name="operationId">操作ID</param>
             <param name="path">API路径</param>
             <param name="httpMethod">HTTP方法</param>

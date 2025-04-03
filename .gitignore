@@ -8,3 +8,5 @@
 /src/MCPP.Net/Properties
 /src/MCPP.Net/appsettings.Development.json
 /src/MCPP.Net/ImportedSwaggers
+/src/MCPP.Net/ImportedTools
+/src/MCPP.Net/Services/SwaggerImportService.cs
