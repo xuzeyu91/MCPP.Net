@@ -55,8 +55,9 @@ app.UseSwaggerUI(c =>
 });
 
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.MapMcp();
+app.UseStaticFiles();
 app.Run(); 
