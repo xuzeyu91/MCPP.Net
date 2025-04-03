@@ -251,6 +251,14 @@
             <param name="className">类名</param>
             <returns>是否删除成功</returns>
         </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.FindParameterIndex(Mono.Collections.Generic.Collection{Mono.Cecil.ParameterDefinition},System.String)">
+            <summary>
+            查找参数在集合中的索引
+            </summary>
+            <param name="parameters">参数集合</param>
+            <param name="name">参数名</param>
+            <returns>参数索引，找不到返回-1</returns>
+        </member>
         <member name="T:MCPP.Net.Services.SwaggerStorageItem">
             <summary>
             Swagger存储项
