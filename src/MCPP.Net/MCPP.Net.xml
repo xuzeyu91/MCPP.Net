@@ -181,11 +181,12 @@
             <param name="baseUrl">API基础URL</param>
             <returns>生成的动态类型</returns>
         </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(System.Reflection.Emit.TypeBuilder,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
+        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
             <summary>
             创建动态方法
             </summary>
-            <param name="typeBuilder">TypeBuilder</param>
+            <param name="moduleDefinition">模块定义</param>
+            <param name="typeDefinition">类型定义</param>
             <param name="operationId">操作ID</param>
             <param name="path">API路径</param>
             <param name="httpMethod">HTTP方法</param>
@@ -249,6 +250,14 @@
             <param name="nameSpace">工具命名空间</param>
             <param name="className">类名</param>
             <returns>是否删除成功</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.FindParameterIndex(Mono.Collections.Generic.Collection{Mono.Cecil.ParameterDefinition},System.String)">
+            <summary>
+            查找参数在集合中的索引
+            </summary>
+            <param name="parameters">参数集合</param>
+            <param name="name">参数名</param>
+            <returns>参数索引，找不到返回-1</returns>
         </member>
         <member name="T:MCPP.Net.Services.SwaggerStorageItem">
             <summary>

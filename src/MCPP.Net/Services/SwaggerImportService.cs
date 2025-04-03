@@ -1,11 +1,16 @@
 using MCPP.Net.Models;
 using ModelContextProtocol.Server;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
+using Mono.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
-using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -22,6 +27,7 @@ namespace MCPP.Net.Services
         private readonly IWebHostEnvironment _hostEnvironment;
         private static readonly Dictionary<string, ImportedTool> _importedTools = new Dictionary<string, ImportedTool>();
         private readonly string _storageDirectory;
+        private readonly string _assemblyDirectory;
 
         public SwaggerImportService(
             ILogger<SwaggerImportService> logger,
@@ -34,6 +40,7 @@ namespace MCPP.Net.Services
             _httpClientFactory = httpClientFactory;
             _hostEnvironment = hostEnvironment;
             _storageDirectory = Path.Combine(_hostEnvironment.ContentRootPath, "ImportedSwaggers");
+            _assemblyDirectory = _storageDirectory; // 使用相同目录存储程序集
             
             // 确保存储目录存在
             if (!Directory.Exists(_storageDirectory))
@@ -159,48 +166,84 @@ namespace MCPP.Net.Services
         /// <returns>生成的动态类型</returns>
         private Type GenerateDynamicToolType(JObject swaggerDoc, SwaggerImportRequest request, string baseUrl)
         {
-            // 创建AssemblyBuilder和ModuleBuilder
-            AssemblyName assemblyName = new AssemblyName($"{request.NameSpace}.{request.ClassName}");
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
-
-            // 创建TypeBuilder
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(
-                $"{request.NameSpace}.{request.ClassName}", 
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract | TypeAttributes.Sealed);
-
+            string assemblyName = $"{request.NameSpace}.{request.ClassName}";
+            string fileName = $"{assemblyName}.dll";
+            string assemblyPath = Path.Combine(_assemblyDirectory, fileName);
+            
+            // 创建新的程序集定义
+            var assemblyDefinition = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition(assemblyName, new Version(1, 0, 0, 0)),
+                assemblyName,
+                ModuleKind.Dll);
+            
+            // 创建主模块
+            ModuleDefinition moduleDefinition = assemblyDefinition.MainModule;
+            
+            // 添加必要的引用
+            moduleDefinition.ImportReference(typeof(object));
+            moduleDefinition.ImportReference(typeof(StringBuilder));
+            moduleDefinition.ImportReference(typeof(McpServerToolTypeAttribute));
+            moduleDefinition.ImportReference(typeof(McpServerToolAttribute));
+            moduleDefinition.ImportReference(typeof(DescriptionAttribute));
+            
+            // 创建类型定义
+            TypeDefinition typeDefinition = new TypeDefinition(
+                request.NameSpace,
+                request.ClassName,
+                Mono.Cecil.TypeAttributes.Public | Mono.Cecil.TypeAttributes.Abstract | Mono.Cecil.TypeAttributes.Sealed | Mono.Cecil.TypeAttributes.Class,
+                moduleDefinition.ImportReference(typeof(object)));
+            
+            // 添加默认构造函数
+            var defaultCtor = new MethodDefinition(
+                ".ctor",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.SpecialName | Mono.Cecil.MethodAttributes.RTSpecialName,
+                moduleDefinition.ImportReference(typeof(void)));
+            
+            var il = defaultCtor.Body.GetILProcessor();
+            il.Append(il.Create(OpCodes.Ldarg_0));
+            il.Append(il.Create(OpCodes.Call, moduleDefinition.ImportReference(typeof(object).GetConstructor(Type.EmptyTypes))));
+            il.Append(il.Create(OpCodes.Ret));
+            
+            typeDefinition.Methods.Add(defaultCtor);
+            
             // 添加McpServerToolType特性
-            Type mcpServerToolTypeAttrType = typeof(McpServerToolTypeAttribute);
-            ConstructorInfo mcpServerToolTypeCtorInfo = mcpServerToolTypeAttrType.GetConstructor(Type.EmptyTypes)!;
-            CustomAttributeBuilder mcpServerToolTypeAttrBuilder = new CustomAttributeBuilder(mcpServerToolTypeCtorInfo, Array.Empty<object>());
-            typeBuilder.SetCustomAttribute(mcpServerToolTypeAttrBuilder);
-
+            var customAttribute = new CustomAttribute(
+                moduleDefinition.ImportReference(typeof(McpServerToolTypeAttribute).GetConstructor(Type.EmptyTypes)));
+            typeDefinition.CustomAttributes.Add(customAttribute);
+            
             // 解析Swagger Paths并创建方法
             JObject paths = (JObject)swaggerDoc["paths"]!;
-            int methodCount = 0;
-
+            
             foreach (var pathPair in paths)
             {
                 string path = pathPair.Key;
                 JObject operations = (JObject)pathPair.Value!;
-
+                
                 foreach (var operationPair in operations)
                 {
                     string httpMethod = operationPair.Key.ToUpper();
                     JObject operation = (JObject)operationPair.Value!;
-
+                    
                     // 使用namespace + class + path生成operationId
                     string operationId = $"{request.NameSpace}_{request.ClassName}_{path.Replace("/", "_").Trim('_')}";
                     string summary = operation["summary"]?.ToString() ?? $"HTTP {httpMethod} {path}";
                     string description = operation["description"]?.ToString() ?? summary;
-
+                    
                     // 创建方法
-                    CreateDynamicMethod(typeBuilder, operationId, path, httpMethod, summary, description, operation, baseUrl);
+                    CreateDynamicMethod(moduleDefinition, typeDefinition, operationId, path, httpMethod, summary, description, operation, baseUrl);
                 }
             }
-
-            // 生成类型
-            Type dynamicType = typeBuilder.CreateType()!;
+            
+            // 将类型添加到模块
+            moduleDefinition.Types.Add(typeDefinition);
+            
+            // 将程序集写入磁盘
+            assemblyDefinition.Write(assemblyPath);
+            
+            // 加载程序集
+            Assembly assembly = Assembly.LoadFrom(assemblyPath);
+            Type dynamicType = assembly.GetType($"{request.NameSpace}.{request.ClassName}")!;
+            
             _logger.LogInformation("已创建动态工具类型: {TypeName}", dynamicType.FullName);
             return dynamicType;
         }
@@ -208,7 +251,8 @@ namespace MCPP.Net.Services
         /// <summary>
         /// 创建动态方法
         /// </summary>
-        /// <param name="typeBuilder">TypeBuilder</param>
+        /// <param name="moduleDefinition">模块定义</param>
+        /// <param name="typeDefinition">类型定义</param>
         /// <param name="operationId">操作ID</param>
         /// <param name="path">API路径</param>
         /// <param name="httpMethod">HTTP方法</param>
@@ -217,12 +261,13 @@ namespace MCPP.Net.Services
         /// <param name="operation">操作定义</param>
         /// <param name="baseUrl">API基础URL</param>
         private void CreateDynamicMethod(
-            TypeBuilder typeBuilder, 
-            string operationId, 
-            string path, 
-            string httpMethod, 
-            string summary, 
-            string description, 
+            ModuleDefinition moduleDefinition,
+            TypeDefinition typeDefinition,
+            string operationId,
+            string path,
+            string httpMethod,
+            string summary,
+            string description,
             JObject operation,
             string baseUrl)
         {
@@ -233,11 +278,16 @@ namespace MCPP.Net.Services
             JArray? parameters = (JArray?)operation["parameters"];
             JObject? requestBody = (JObject?)operation["requestBody"];
             
-            List<Type> parameterTypes = new List<Type>();
             List<string> parameterNames = new List<string>();
             List<string> parameterDescriptions = new List<string>();
             List<string> pathParams = new List<string>();
             List<string> queryParams = new List<string>();
+            
+            // 创建方法定义
+            var methodDefinition = new MethodDefinition(
+                methodName,
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static,
+                moduleDefinition.ImportReference(typeof(string)));
             
             // 处理Path和Query参数
             if (parameters != null)
@@ -250,9 +300,24 @@ namespace MCPP.Net.Services
                     if (paramIn == "path" || paramIn == "query")
                     {
                         string normalizedName = NormalizeParameterName(paramName);
-                        parameterTypes.Add(typeof(string));
+                        var parameterDefinition = new ParameterDefinition(
+                            normalizedName, 
+                            Mono.Cecil.ParameterAttributes.None, 
+                            moduleDefinition.ImportReference(typeof(string)));
+                        
+                        methodDefinition.Parameters.Add(parameterDefinition);
+                        
+                        // 为参数添加Description特性
+                        string paramDescription = param["description"]?.ToString() ?? $"参数 {paramName}";
+                        var descriptionAttr = new CustomAttribute(
+                            moduleDefinition.ImportReference(
+                                typeof(DescriptionAttribute).GetConstructor(new[] { typeof(string) })));
+                        descriptionAttr.ConstructorArguments.Add(
+                            new CustomAttributeArgument(moduleDefinition.ImportReference(typeof(string)), paramDescription));
+                        parameterDefinition.CustomAttributes.Add(descriptionAttr);
+                        
                         parameterNames.Add(normalizedName);
-                        parameterDescriptions.Add(param["description"]?.ToString() ?? $"参数 {paramName}");
+                        parameterDescriptions.Add(paramDescription);
                         
                         if (paramIn == "path")
                         {
@@ -274,8 +339,12 @@ namespace MCPP.Net.Services
             if (requestBody != null)
             {
                 hasRequestBody = true;
-                parameterTypes.Add(typeof(string));
-                parameterNames.Add("requestBody");
+                var parameterDefinition = new ParameterDefinition(
+                    "requestBody", 
+                    Mono.Cecil.ParameterAttributes.None, 
+                    moduleDefinition.ImportReference(typeof(string)));
+                
+                methodDefinition.Parameters.Add(parameterDefinition);
                 
                 // 尝试提取请求体Schema和描述
                 if (requestBody["content"] is JObject content && 
@@ -291,54 +360,54 @@ namespace MCPP.Net.Services
                     requestBodyDescription = schemaDescription.ToString();
                 }
                 
+                // 为请求体参数添加Description特性
+                var descriptionAttr = new CustomAttribute(
+                    moduleDefinition.ImportReference(
+                        typeof(DescriptionAttribute).GetConstructor(new[] { typeof(string) })));
+                descriptionAttr.ConstructorArguments.Add(
+                    new CustomAttributeArgument(moduleDefinition.ImportReference(typeof(string)), requestBodyDescription));
+                parameterDefinition.CustomAttributes.Add(descriptionAttr);
+                
+                parameterNames.Add("requestBody");
                 parameterDescriptions.Add(requestBodyDescription);
             }
             
-            // 定义方法
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
-                methodName,
-                MethodAttributes.Public | MethodAttributes.Static,
-                typeof(string),
-                parameterTypes.ToArray());
-            
-            // 设置参数名称
-            for (int i = 0; i < parameterNames.Count; i++)
-            {
-                ParameterBuilder paramBuilder = methodBuilder.DefineParameter(i + 1, ParameterAttributes.None, parameterNames[i]);
-                
-                // 为参数添加Description特性
-                Type paramDescriptionAttrType = typeof(DescriptionAttribute);
-                ConstructorInfo paramDescriptionCtorInfo = paramDescriptionAttrType.GetConstructor(new Type[] { typeof(string) })!;
-                CustomAttributeBuilder paramDescriptionAttrBuilder = new CustomAttributeBuilder(
-                    paramDescriptionCtorInfo, 
-                    new object[] { parameterDescriptions[i] });
-                paramBuilder.SetCustomAttribute(paramDescriptionAttrBuilder);
-            }
-
             // 添加McpServerTool特性
-            Type mcpServerToolAttrType = typeof(McpServerToolAttribute);
-            ConstructorInfo mcpServerToolCtorInfo = mcpServerToolAttrType.GetConstructor(Type.EmptyTypes)!;
+            var mcpServerToolAttr = new CustomAttribute(
+                moduleDefinition.ImportReference(
+                    typeof(McpServerToolAttribute).GetConstructor(Type.EmptyTypes)));
             
-            CustomAttributeBuilder mcpServerToolAttrBuilder = new CustomAttributeBuilder(
-                mcpServerToolCtorInfo, 
-                Array.Empty<object>(),
-                new PropertyInfo[] { mcpServerToolAttrType.GetProperty("Name")! },
-                new object[] { methodName.ToLower() });
-            methodBuilder.SetCustomAttribute(mcpServerToolAttrBuilder);
-
+            // 设置Name属性
+            var nameProperty = typeof(McpServerToolAttribute).GetProperty("Name");
+            if (nameProperty != null && nameProperty.GetSetMethod() != null)
+            {
+                mcpServerToolAttr.Properties.Add(
+                    new Mono.Cecil.CustomAttributeNamedArgument(
+                        "Name", 
+                        new CustomAttributeArgument(moduleDefinition.ImportReference(typeof(string)), methodName.ToLower())));
+            }
+            
+            methodDefinition.CustomAttributes.Add(mcpServerToolAttr);
+            
             // 添加Description特性
-            Type descriptionAttrType = typeof(DescriptionAttribute);
-            ConstructorInfo descriptionCtorInfo = descriptionAttrType.GetConstructor(new Type[] { typeof(string) })!;
-            CustomAttributeBuilder descriptionAttrBuilder = new CustomAttributeBuilder(descriptionCtorInfo, new object[] { description });
-            methodBuilder.SetCustomAttribute(descriptionAttrBuilder);
-
+            var methodDescAttr = new CustomAttribute(
+                moduleDefinition.ImportReference(
+                    typeof(DescriptionAttribute).GetConstructor(new[] { typeof(string) })));
+            methodDescAttr.ConstructorArguments.Add(
+                new CustomAttributeArgument(moduleDefinition.ImportReference(typeof(string)), description));
+            methodDefinition.CustomAttributes.Add(methodDescAttr);
+            
             // 生成示例HTTP请求代码
             string fullPath = path;
+            int placeholderIndex = 0;
             foreach (var pathParam in pathParams)
             {
-                fullPath = fullPath.Replace($"{{{pathParam}}}", $"\" + {NormalizeParameterName(pathParam)} + \"");
+                // 获取规范化的参数名
+                string normalizedName = NormalizeParameterName(pathParam);
+                // 使用简单的字符串替换，添加占位符
+                fullPath = fullPath.Replace($"{{{pathParam}}}", $"{{{placeholderIndex++}}}");
             }
-            
+
             string queryString = "";
             if (queryParams.Count > 0)
             {
@@ -349,76 +418,303 @@ namespace MCPP.Net.Services
                     {
                         queryString += "&";
                     }
-                    string normalizedName = NormalizeParameterName(queryParams[i]);
-                    queryString += $"{queryParams[i]}=\" + {normalizedName} + \"";
+                    string paramName = queryParams[i];
+                    string normalizedName = NormalizeParameterName(paramName);
+                    queryString += $"{paramName}={{{placeholderIndex++}}}";
                 }
             }
             
             string fullUrl = baseUrl + fullPath + queryString;
             
-            // 生成方法实现
-            ILGenerator il = methodBuilder.GetILGenerator();
+            // 获取ILProcessor
+            ILProcessor ilProcessor = methodDefinition.Body.GetILProcessor();
             
-            // 创建StringBuilder
-            LocalBuilder stringBuilder = il.DeclareLocal(typeof(StringBuilder));
-            il.Emit(OpCodes.Newobj, typeof(StringBuilder).GetConstructor(Type.EmptyTypes)!);
-            il.Emit(OpCodes.Stloc, stringBuilder);
+            // 创建变量
+            var httpClientVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(HttpClient)));
+            var responseVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(HttpResponseMessage)));
+            var contentVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(string)));
+            var formattedUrlVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(string)));
             
-            // 添加API信息
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, $"API: {httpMethod} {path}\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加API请求示例
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, $"\n示例请求:\n```\n{httpMethod} {fullUrl}\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加请求头
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, "Content-Type: application/json\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加请求体示例
-            if (hasRequestBody)
+            methodDefinition.Body.Variables.Add(httpClientVar);
+            methodDefinition.Body.Variables.Add(responseVar);
+            methodDefinition.Body.Variables.Add(contentVar);
+            methodDefinition.Body.Variables.Add(formattedUrlVar);
+
+            // 格式化 URL，替换路径参数和查询参数
+            if (pathParams.Count > 0 || queryParams.Count > 0)
             {
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, $"\n{requestBodySchema}\n");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
+                // 使用 string.Format 方法格式化 URL
+                ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, fullUrl));
+                
+                // 添加路径参数
+                foreach (var pathParam in pathParams)
+                {
+                    string normalizedName = NormalizeParameterName(pathParam);
+                    int paramIndex = FindParameterIndex(methodDefinition.Parameters, normalizedName);
+                    if (paramIndex >= 0)
+                    {
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg, paramIndex));
+                    }
+                    else
+                    {
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, ""));
+                    }
+                }
+                
+                // 添加查询参数
+                foreach (var queryParam in queryParams)
+                {
+                    string normalizedName = NormalizeParameterName(queryParam);
+                    int paramIndex = FindParameterIndex(methodDefinition.Parameters, normalizedName);
+                    if (paramIndex >= 0)
+                    {
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg, paramIndex));
+                    }
+                    else
+                    {
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, ""));
+                    }
+                }
+                
+                // 调用 string.Format 方法
+                var stringFormatMethod = moduleDefinition.ImportReference(
+                    typeof(string).GetMethod("Format", new Type[] { 
+                        typeof(string), 
+                        typeof(object), 
+                        typeof(object),
+                        typeof(object)
+                    }));
+                
+                if (pathParams.Count + queryParams.Count == 1)
+                {
+                    stringFormatMethod = moduleDefinition.ImportReference(
+                        typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object) }));
+                }
+                else if (pathParams.Count + queryParams.Count == 2)
+                {
+                    stringFormatMethod = moduleDefinition.ImportReference(
+                        typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object), typeof(object) }));
+                }
+                else if (pathParams.Count + queryParams.Count == 3)
+                {
+                    stringFormatMethod = moduleDefinition.ImportReference(
+                        typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object), typeof(object), typeof(object) }));
+                }
+                else if (pathParams.Count + queryParams.Count > 3)
+                {
+                    // 对于更多参数，使用 params 版本的 Format 方法
+                    stringFormatMethod = moduleDefinition.ImportReference(
+                        typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object[]) }));
+                    
+                    // 创建数组
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldc_I4, pathParams.Count + queryParams.Count));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Newarr, moduleDefinition.ImportReference(typeof(object))));
+                    
+                    // 填充数组
+                    int index = 0;
+                    foreach (var pathParam in pathParams)
+                    {
+                        string normalizedName = NormalizeParameterName(pathParam);
+                        int paramIndex = FindParameterIndex(methodDefinition.Parameters, normalizedName);
+                        
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Dup));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldc_I4, index));
+                        
+                        if (paramIndex >= 0)
+                        {
+                            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg, paramIndex));
+                        }
+                        else
+                        {
+                            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, ""));
+                        }
+                        
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Stelem_Ref));
+                        index++;
+                    }
+                    
+                    foreach (var queryParam in queryParams)
+                    {
+                        string normalizedName = NormalizeParameterName(queryParam);
+                        int paramIndex = FindParameterIndex(methodDefinition.Parameters, normalizedName);
+                        
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Dup));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldc_I4, index));
+                        
+                        if (paramIndex >= 0)
+                        {
+                            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg, paramIndex));
+                        }
+                        else
+                        {
+                            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, ""));
+                        }
+                        
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Stelem_Ref));
+                        index++;
+                    }
+                }
+                
+                ilProcessor.Append(ilProcessor.Create(OpCodes.Call, stringFormatMethod));
+                ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, formattedUrlVar));
             }
-            
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, "```\n\n参数值:\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加参数信息
-            for (int i = 0; i < parameterNames.Count; i++)
+            else
             {
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, $"- {parameterNames[i]}: ");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-                
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldarg, i + 1);
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-                
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, "\n");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
+                // 如果没有参数，直接使用 fullUrl
+                ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, fullUrl));
+                ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, formattedUrlVar));
             }
-            
-            // 返回结果
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes)!);
-            il.Emit(OpCodes.Ret);
+
+            // ----------------- 新增发送 HTTP 请求的 IL代码 -----------------
+            // 创建 HttpClient 实例
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, moduleDefinition.ImportReference(typeof(HttpClient).GetConstructor(Type.EmptyTypes))));
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, httpClientVar));
+
+            // 根据HTTP方法处理不同类型的请求
+            switch (httpMethod.ToUpper())
+            {
+                case "GET":
+                    // 发送 GET 请求
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                    var getAsyncMethod = moduleDefinition.ImportReference(typeof(HttpClient).GetMethod("GetAsync", new Type[] { typeof(string) }));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, getAsyncMethod));
+                    break;
+
+                case "DELETE":
+                    // 发送 DELETE 请求
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                    var deleteAsyncMethod = moduleDefinition.ImportReference(typeof(HttpClient).GetMethod("DeleteAsync", new Type[] { typeof(string) }));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, deleteAsyncMethod));
+                    break;
+
+                case "POST":
+                case "PUT":
+                case "PATCH":
+                    // 创建 HttpContent 用于请求内容
+                    var requestContentVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(StringContent)));
+                    methodDefinition.Body.Variables.Add(requestContentVar);
+                    
+                    if (hasRequestBody)
+                    {
+                        // 创建 StringContent 实例
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg, methodDefinition.Parameters.Count - 1)); // 最后一个参数是requestBody
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Call, moduleDefinition.ImportReference(typeof(Encoding).GetProperty("UTF8").GetGetMethod())));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, "application/json"));
+                        var stringContentCtor = moduleDefinition.ImportReference(
+                            typeof(StringContent).GetConstructor(new Type[] { typeof(string), typeof(Encoding), typeof(string) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, stringContentCtor));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, requestContentVar));
+                    }
+                    else
+                    {
+                        // 创建空的 StringContent
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, "{}"));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Call, moduleDefinition.ImportReference(typeof(Encoding).GetProperty("UTF8").GetGetMethod())));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, "application/json"));
+                        var stringContentCtor = moduleDefinition.ImportReference(
+                            typeof(StringContent).GetConstructor(new Type[] { typeof(string), typeof(Encoding), typeof(string) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, stringContentCtor));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, requestContentVar));
+                    }
+
+                    // 根据不同的HTTP方法选择相应的请求方式
+                    if (httpMethod.ToUpper() == "POST")
+                    {
+                        // 发送 POST 请求
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, requestContentVar));
+                        var postAsyncMethod = moduleDefinition.ImportReference(
+                            typeof(HttpClient).GetMethod("PostAsync", new Type[] { typeof(string), typeof(HttpContent) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, postAsyncMethod));
+                    }
+                    else if (httpMethod.ToUpper() == "PUT")
+                    {
+                        // 发送 PUT 请求
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, requestContentVar));
+                        var putAsyncMethod = moduleDefinition.ImportReference(
+                            typeof(HttpClient).GetMethod("PutAsync", new Type[] { typeof(string), typeof(HttpContent) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, putAsyncMethod));
+                    }
+                    else // PATCH 和其他方法
+                    {
+                        // 对于 PATCH 方法，使用 SendAsync 方法
+                        // 先创建一个临时变量存储HttpRequestMessage
+                        var requestMessageVar = new VariableDefinition(moduleDefinition.ImportReference(typeof(HttpRequestMessage)));
+                        methodDefinition.Body.Variables.Add(requestMessageVar);
+                        
+                        // 创建HttpMethod.Patch
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Call, moduleDefinition.ImportReference(
+                            typeof(HttpMethod).GetProperty("Patch").GetGetMethod())));
+                        
+                        // 加载URL
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                        
+                        // 创建 HttpRequestMessage
+                        var httpRequestMessageCtor = moduleDefinition.ImportReference(
+                            typeof(HttpRequestMessage).GetConstructor(new Type[] { typeof(HttpMethod), typeof(string) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, httpRequestMessageCtor));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, requestMessageVar));
+                        
+                        // 设置请求内容
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, requestMessageVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, requestContentVar));
+                        
+                        var contentSetter = moduleDefinition.ImportReference(
+                            typeof(HttpRequestMessage).GetProperty("Content").GetSetMethod());
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, contentSetter));
+                        
+                        // 发送请求
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, requestMessageVar));
+                        
+                        var sendAsyncMethod = moduleDefinition.ImportReference(
+                            typeof(HttpClient).GetMethod("SendAsync", new Type[] { typeof(HttpRequestMessage) }));
+                        ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, sendAsyncMethod));
+                    }
+                    break;
+
+                default:
+                    // 默认使用GET请求
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, httpClientVar));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, formattedUrlVar));
+                    var defaultGetAsyncMethod = moduleDefinition.ImportReference(typeof(HttpClient).GetMethod("GetAsync", new Type[] { typeof(string) }));
+                    ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, defaultGetAsyncMethod));
+                    break;
+            }
+
+            // 调用 Task<HttpResponseMessage>.Result 获取响应结果
+            var taskResponseResultGetter = moduleDefinition.ImportReference(
+                typeof(System.Threading.Tasks.Task<HttpResponseMessage>).GetProperty("Result").GetGetMethod());
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, taskResponseResultGetter));
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, responseVar));
+
+            // 从响应中获取 HttpContent
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, responseVar));
+            var getContentGetter = moduleDefinition.ImportReference(
+                typeof(HttpResponseMessage).GetProperty("Content").GetGetMethod());
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, getContentGetter));
+
+            // 调用 HttpContent.ReadAsStringAsync 并同步获取响应体字符串
+            var readAsStringAsyncMethod = moduleDefinition.ImportReference(
+                typeof(HttpContent).GetMethod("ReadAsStringAsync", Type.EmptyTypes));
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, readAsStringAsyncMethod));
+            var taskStringResultGetter = moduleDefinition.ImportReference(
+                typeof(System.Threading.Tasks.Task<string>).GetProperty("Result").GetGetMethod());
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Callvirt, taskStringResultGetter));
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Stloc, contentVar));
+            // ----------------- 结束发送 HTTP 请求的 IL代码 -----------------
+
+            // 将响应体字符串加载到栈顶，并返回
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldloc, contentVar));
+            ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
+
+            // 将方法添加到类型
+            typeDefinition.Methods.Add(methodDefinition);
         }
 
         /// <summary>
@@ -563,11 +859,6 @@ namespace MCPP.Net.Services
                 File.WriteAllText(filePath, storageJson);
                 
                 _logger.LogInformation("已保存Swagger定义: {FilePath}", filePath);
-                
-                // TODO: 实现将动态生成的类型编译为DLL的功能
-                // 这需要使用CodeDOM或Roslyn编译器来实现
-                // 可以在这里将Swagger对象编译为DLL并保存到ImportedTools目录
-                // 然后通过ImportedToolsService来加载它
             }
             catch (Exception ex)
             {
@@ -618,8 +909,31 @@ namespace MCPP.Net.Services
                                 }
                             }
                             
-                            // 动态生成API工具类
-                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
+                            // 检查程序集是否已经存在
+                            string assemblyFileName = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}.dll";
+                            string assemblyPath = Path.Combine(_assemblyDirectory, assemblyFileName);
+                            Type? toolType = null;
+                            
+                            if (File.Exists(assemblyPath))
+                            {
+                                try
+                                {
+                                    // 尝试加载已有的程序集
+                                    Assembly assembly = Assembly.LoadFrom(assemblyPath);
+                                    toolType = assembly.GetType($"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}");
+                                    _logger.LogInformation("已加载现有工具程序集: {Path}", assemblyPath);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "加载已有程序集失败: {Path}, 将重新生成", assemblyPath);
+                                }
+                            }
+                            
+                            if (toolType == null)
+                            {
+                                // 动态生成API工具类
+                                toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
+                            }
                             
                             // 注册工具方法到MCP服务
                             List<string> registeredMethods = RegisterToolMethods(toolType);
@@ -687,12 +1001,41 @@ namespace MCPP.Net.Services
                         
                         if (storageItem != null)
                         {
-                            // 解析JSON并创建工具类型
+                            // 检查程序集是否已经存在
+                            string assemblyFileName = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}.dll";
+                            string assemblyPath = Path.Combine(_assemblyDirectory, assemblyFileName);
+                            Type? toolType = null;
+                            
+                            if (File.Exists(assemblyPath))
+                            {
+                                try
+                                {
+                                    // 尝试加载已有的程序集
+                                    Assembly assembly = Assembly.LoadFrom(assemblyPath);
+                                    toolType = assembly.GetType($"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}");
+                                    
+                                    if (toolType != null)
+                                    {
+                                        toolTypes.Add(toolType);
+                                        continue;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "加载已有程序集失败: {Path}", assemblyPath);
+                                }
+                            }
+                            
+                            // 如果程序集不存在或加载失败，重新生成
                             JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
                             
                             // 获取服务器基础URL
                             string baseUrl = "";
-                            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+                            if (!string.IsNullOrEmpty(storageItem.Request.SourceBaseUrl))
+                            {
+                                baseUrl = storageItem.Request.SourceBaseUrl;
+                            }
+                            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
                             {
                                 JArray servers = (JArray)swaggerDoc["servers"]!;
                                 if (servers.Count > 0 && servers[0]["url"] != null)
@@ -702,7 +1045,7 @@ namespace MCPP.Net.Services
                             }
                             
                             // 创建工具类型
-                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
+                            toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
                             toolTypes.Add(toolType);
                         }
                     }
@@ -740,11 +1083,19 @@ namespace MCPP.Net.Services
             try
             {
                 // 删除存储的JSON文件
-                string filePath = Path.Combine(_storageDirectory, $"{key}.json");
-                if (File.Exists(filePath))
+                string jsonFilePath = Path.Combine(_storageDirectory, $"{key}.json");
+                if (File.Exists(jsonFilePath))
                 {
-                    File.Delete(filePath);
-                    _logger.LogInformation("已删除工具定义文件: {FilePath}", filePath);
+                    File.Delete(jsonFilePath);
+                    _logger.LogInformation("已删除工具定义文件: {FilePath}", jsonFilePath);
+                }
+                
+                // 删除程序集文件
+                string assemblyFilePath = Path.Combine(_assemblyDirectory, $"{key}.dll");
+                if (File.Exists(assemblyFilePath))
+                {
+                    File.Delete(assemblyFilePath);
+                    _logger.LogInformation("已删除工具程序集文件: {FilePath}", assemblyFilePath);
                 }
                 
                 // 从字典中移除记录
@@ -758,6 +1109,24 @@ namespace MCPP.Net.Services
                 _logger.LogError(ex, "删除工具失败: {Key}, {Message}", key, ex.Message);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 查找参数在集合中的索引
+        /// </summary>
+        /// <param name="parameters">参数集合</param>
+        /// <param name="name">参数名</param>
+        /// <returns>参数索引，找不到返回-1</returns>
+        private int FindParameterIndex(Collection<ParameterDefinition> parameters, string name)
+        {
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                if (parameters[i].Name == name)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
     }
     
