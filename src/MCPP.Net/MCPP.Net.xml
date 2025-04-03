@@ -13,7 +13,7 @@
             <summary>
             导入Swagger API并动态注册为MCP工具
             </summary>
-            <param name="request">导入请求参数</param>
+            <param name="request">导入请求参数(包含SwaggerUrl和可选的SourceBaseUrl)</param>
             <returns>导入结果</returns>
         </member>
         <member name="M:MCPP.Net.Controllers.ImportController.GetImportedTools">
@@ -46,6 +46,11 @@
         <member name="P:MCPP.Net.Models.SwaggerImportRequest.SwaggerUrl">
             <summary>
             Swagger文档URL或本地路径
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.SwaggerImportRequest.SourceBaseUrl">
+            <summary>
+            源服务器基础URL(包含IP和端口)
             </summary>
         </member>
         <member name="P:MCPP.Net.Models.SwaggerImportRequest.NameSpace">
@@ -111,6 +116,11 @@
         <member name="P:MCPP.Net.Models.ImportedTool.SwaggerSource">
             <summary>
             Swagger来源
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ImportedTool.SourceBaseUrl">
+            <summary>
+            源服务器基础URL
             </summary>
         </member>
         <member name="T:MCPP.Net.Services.ImportedToolsService">

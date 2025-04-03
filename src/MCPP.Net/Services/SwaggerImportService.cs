@@ -66,12 +66,19 @@ namespace MCPP.Net.Services
             
             // 获取服务器基础URL
             string baseUrl = "";
-            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+            // 优先使用用户提供的源服务器URL
+            if (!string.IsNullOrEmpty(request.SourceBaseUrl))
+            {
+                baseUrl = request.SourceBaseUrl;
+                _logger.LogInformation("使用用户提供的源服务器URL: {BaseUrl}", baseUrl);
+            }
+            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
             {
                 JArray servers = (JArray)swaggerDoc["servers"]!;
                 if (servers.Count > 0 && servers[0]["url"] != null)
                 {
                     baseUrl = servers[0]["url"]!.ToString();
+                    _logger.LogInformation("从Swagger文档中获取服务器URL: {BaseUrl}", baseUrl);
                 }
             }
             
@@ -88,7 +95,8 @@ namespace MCPP.Net.Services
                 ClassName = request.ClassName,
                 ApiCount = registeredMethods.Count,
                 ImportDate = DateTime.Now,
-                SwaggerSource = request.SwaggerUrl
+                SwaggerSource = request.SwaggerUrl,
+                SourceBaseUrl = request.SourceBaseUrl
             };
             
             string key = $"{request.NameSpace}.{request.ClassName}";
@@ -182,7 +190,7 @@ namespace MCPP.Net.Services
                     JObject operation = (JObject)operationPair.Value!;
 
                     // 使用namespace + class + path生成operationId
-                    string operationId = $"{request.NameSpace}.{request.ClassName}.{path.Replace("/", "_").Trim('_')}";
+                    string operationId = $"{request.NameSpace}_{request.ClassName}_{path.Replace("/", "_").Trim('_')}";
                     string summary = operation["summary"]?.ToString() ?? $"HTTP {httpMethod} {path}";
                     string description = operation["description"]?.ToString() ?? summary;
 
@@ -594,12 +602,19 @@ namespace MCPP.Net.Services
                             
                             // 获取服务器基础URL
                             string baseUrl = "";
-                            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+                            // 优先使用用户提供的源服务器URL
+                            if (!string.IsNullOrEmpty(storageItem.Request.SourceBaseUrl))
+                            {
+                                baseUrl = storageItem.Request.SourceBaseUrl;
+                                _logger.LogInformation("使用用户提供的源服务器URL: {BaseUrl}", baseUrl);
+                            }
+                            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
                             {
                                 JArray servers = (JArray)swaggerDoc["servers"]!;
                                 if (servers.Count > 0 && servers[0]["url"] != null)
                                 {
                                     baseUrl = servers[0]["url"]!.ToString();
+                                    _logger.LogInformation("从Swagger文档中获取服务器URL: {BaseUrl}", baseUrl);
                                 }
                             }
                             
@@ -616,7 +631,8 @@ namespace MCPP.Net.Services
                                 ClassName = storageItem.Request.ClassName,
                                 ApiCount = registeredMethods.Count,
                                 ImportDate = storageItem.ImportDate,
-                                SwaggerSource = storageItem.Request.SwaggerUrl
+                                SwaggerSource = storageItem.Request.SwaggerUrl,
+                                SourceBaseUrl = storageItem.Request.SourceBaseUrl
                             };
                             
                             string key = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}";
@@ -628,19 +644,17 @@ namespace MCPP.Net.Services
                             {
                                 _importedTools.Add(key, importedTool);
                             }
-                            
-                            _logger.LogInformation("成功加载并注册工具: {Key}，{Count}个API", key, registeredMethods.Count);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "加载Swagger定义失败: {File}, {Message}", Path.GetFileName(file), ex.Message);
+                        _logger.LogError(ex, "加载Swagger定义失败: {File}, {Message}", file, ex.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "加载已保存的Swagger定义失败: {Message}", ex.Message);
+                _logger.LogError(ex, "加载Swagger定义失败: {Message}", ex.Message);
             }
         }
 
