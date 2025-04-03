@@ -14,6 +14,11 @@ namespace MCPP.Net.Models
         public string SwaggerUrl { get; set; } = string.Empty;
 
         /// <summary>
+        /// 源服务器基础URL(包含IP和端口)
+        /// </summary>
+        public string SourceBaseUrl { get; set; } = string.Empty;
+
+        /// <summary>
         /// 生成类的命名空间
         /// </summary>
         [Required]
@@ -81,5 +86,10 @@ namespace MCPP.Net.Models
         /// Swagger来源
         /// </summary>
         public string SwaggerSource { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 源服务器基础URL
+        /// </summary>
+        public string SourceBaseUrl { get; set; } = string.Empty;
     }
 } 

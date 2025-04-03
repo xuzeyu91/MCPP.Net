@@ -30,14 +30,16 @@ namespace MCPP.Net.Controllers
         /// <summary>
         /// 导入Swagger API并动态注册为MCP工具
         /// </summary>
-        /// <param name="request">导入请求参数</param>
+        /// <param name="request">导入请求参数(包含SwaggerUrl和可选的SourceBaseUrl)</param>
         /// <returns>导入结果</returns>
         [HttpPost]
         public async Task<IActionResult> Import([FromBody] SwaggerImportRequest request)
         {
             try
             {
-                _logger.LogInformation("开始导入Swagger API: {Url}", request.SwaggerUrl);
+                _logger.LogInformation("开始导入Swagger API: {Url}, 源服务器URL: {SourceUrl}", 
+                    request.SwaggerUrl, 
+                    string.IsNullOrEmpty(request.SourceBaseUrl) ? "(未提供)" : request.SourceBaseUrl);
                 
                 var result = await _importService.ImportSwaggerAsync(request);
                 
