@@ -12,5 +12,7 @@ namespace ModelContextProtocol.Server
         /// </summary>
         /// <param name="methodInfo">方法信息</param>
         void AddMethod(MethodInfo methodInfo);
+
+        void Clear();
     }
 } 

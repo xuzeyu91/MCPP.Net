@@ -37,6 +37,12 @@ namespace ModelContextProtocol.Server
             _logger.LogInformation("已注册方法: {MethodName}", methodInfo.Name);
         }
 
+        public void Clear()
+        {
+            var serverTools = _mcpServerOptions.Capabilities?.Tools?.ToolCollection;
+            serverTools?.Clear();
+        }
+
         /// <summary>
         /// 获取已注册的所有方法
         /// </summary>
