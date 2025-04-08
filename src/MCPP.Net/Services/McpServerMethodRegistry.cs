@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace ModelContextProtocol.Server
@@ -9,10 +10,12 @@ namespace ModelContextProtocol.Server
     {
         private readonly ILogger<McpServerMethodRegistry> _logger;
         private readonly List<MethodInfo> _registeredMethods = new List<MethodInfo>();
+        private readonly McpServerOptions _mcpServerOptions;
 
-        public McpServerMethodRegistry(ILogger<McpServerMethodRegistry> logger)
+        public McpServerMethodRegistry(ILogger<McpServerMethodRegistry> logger, IOptions<McpServerOptions> mcpServerOptions)
         {
             _logger = logger;
+            _mcpServerOptions = mcpServerOptions.Value;
         }
 
         /// <summary>
@@ -25,8 +28,12 @@ namespace ModelContextProtocol.Server
             {
                 throw new ArgumentNullException(nameof(methodInfo));
             }
-
             _registeredMethods.Add(methodInfo);
+
+            //动态添加Tool到MCP服务器
+            var serverTools = _mcpServerOptions.Capabilities?.Tools?.ToolCollection;
+            serverTools?.Add(McpServerTool.Create(methodInfo));
+
             _logger.LogInformation("已注册方法: {MethodName}", methodInfo.Name);
         }
 
@@ -39,4 +46,4 @@ namespace ModelContextProtocol.Server
             return _registeredMethods.AsReadOnly();
         }
     }
-} 
+}
