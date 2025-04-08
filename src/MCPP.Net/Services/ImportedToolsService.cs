@@ -80,6 +80,7 @@ namespace MCPP.Net.Services
                 var methods = toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
                     .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
 
+                _methodRegistry.Clear();
                 foreach (var method in methods)
                 {
                     _methodRegistry.AddMethod(method);

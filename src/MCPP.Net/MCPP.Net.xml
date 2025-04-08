@@ -259,6 +259,11 @@
             <param name="name">参数名</param>
             <returns>参数索引，找不到返回-1</returns>
         </member>
+        <member name="M:MCPP.Net.Services.SwaggerImportService.CleanupResources">
+            <summary>
+            清理资源
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Services.SwaggerStorageItem">
             <summary>
             Swagger存储项
