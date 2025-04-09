@@ -226,7 +226,7 @@ namespace MCPP.Net.Services
                     JObject operation = (JObject)operationPair.Value!;
 
                     // 使用namespace + class + path生成operationId
-                    string operationId = $"{request.NameSpace}_{request.ClassName}_{path.Replace("/", "_").Trim('_')}";
+                    string operationId = $"{request.NameSpace}_{request.ClassName}_{httpMethod}_{path.Replace("/", "_").Trim('_')}";
                     string summary = operation["summary"]?.ToString() ?? $"HTTP {httpMethod} {path}";
                     string description = operation["description"]?.ToString() ?? summary;
 
