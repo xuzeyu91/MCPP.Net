@@ -14,6 +14,7 @@ namespace MCPP.Net.Services
         private readonly ILogger<ImportedToolsService> _logger;
         private readonly IMcpServerMethodRegistry _methodRegistry;
         private readonly string _toolsStoragePath;
+        private readonly string _swaggerDllPath;
         private readonly List<ImportedTool> _importedTools = new List<ImportedTool>();
 
         public ImportedToolsService(
@@ -24,6 +25,7 @@ namespace MCPP.Net.Services
             _logger = logger;
             _methodRegistry = methodRegistry;
             _toolsStoragePath = Path.Combine(hostEnvironment.ContentRootPath, "ImportedTools");
+            _swaggerDllPath = Path.Combine(hostEnvironment.ContentRootPath, "ImportedSwaggers");
             
             // 创建导入工具存储目录
             if (!Directory.Exists(_toolsStoragePath))
@@ -33,6 +35,9 @@ namespace MCPP.Net.Services
             
             // 加载已导入的工具信息
             LoadImportedTools();
+            
+            // 加载ImportedSwaggers目录中的DLL
+            LoadSwaggerDllTools();
         }
 
         /// <summary>
@@ -93,6 +98,98 @@ namespace MCPP.Net.Services
             {
                 _logger.LogError(ex, "加载工具失败: {Message}", ex.Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 从ImportedSwaggers目录加载DLL工具
+        /// </summary>
+        public void LoadSwaggerDllTools()
+        {
+            if (!Directory.Exists(_swaggerDllPath))
+            {
+                _logger.LogInformation("ImportedSwaggers目录不存在，跳过加载");
+                return;
+            }
+
+            _logger.LogInformation("开始从ImportedSwaggers目录加载DLL工具");
+            
+            try
+            {
+                // 获取ImportedSwaggers目录中的所有DLL文件
+                var dllFiles = Directory.GetFiles(_swaggerDllPath, "*.dll");
+                _logger.LogInformation("在ImportedSwaggers目录中找到 {Count} 个DLL文件", dllFiles.Length);
+
+                foreach (var dllFile in dllFiles)
+                {
+                    try
+                    {
+                        // 加载程序集
+                        var assembly = Assembly.LoadFrom(dllFile);
+                        _logger.LogInformation("已加载程序集: {AssemblyName}", assembly.GetName().Name);
+                        
+                        // 获取程序集中所有类型
+                        var types = assembly.GetTypes();
+                        
+                        foreach (var type in types)
+                        {
+                            // 查找带有McpServerToolType特性的类型
+                            var toolTypeAttr = type.GetCustomAttribute<McpServerToolTypeAttribute>();
+                            if (toolTypeAttr != null)
+                            {
+                                _logger.LogInformation("找到工具类型: {TypeName}", type.FullName);
+                                
+                                // 获取所有带有McpServerTool特性的方法
+                                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                    .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null)
+                                    .ToList();
+                                
+                                if (methods.Count > 0)
+                                {
+                                    // 为每个找到的方法注册到MCP服务
+                                    foreach (var method in methods)
+                                    {
+                                        _methodRegistry.AddMethod(method);
+                                    }
+                                    
+                                    _logger.LogInformation("已注册 {Count} 个方法, 来自 {TypeName}", 
+                                        methods.Count, type.FullName);
+                                    
+                                    // 添加到导入工具列表，方便管理
+                                    var importedTool = new ImportedTool
+                                    {
+                                        NameSpace = type.Namespace ?? "UnknownNamespace",
+                                        ClassName = type.Name,
+                                        ApiCount = methods.Count,
+                                        ImportDate = DateTime.Now,
+                                        SwaggerSource = "ImportedSwaggers目录自动加载",
+                                        SourceBaseUrl = ""
+                                    };
+                                    
+                                    // 只有当列表中不存在相同命名空间和类名的工具时才添加
+                                    if (!_importedTools.Any(t => t.NameSpace == importedTool.NameSpace && 
+                                                              t.ClassName == importedTool.ClassName))
+                                    {
+                                        _importedTools.Add(importedTool);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "加载DLL文件失败: {FileName}, {Message}", 
+                            Path.GetFileName(dllFile), ex.Message);
+                    }
+                }
+                
+                // 保存更新后的工具信息
+                SaveImportedTools();
+                _logger.LogInformation("完成从ImportedSwaggers目录加载DLL工具");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "从ImportedSwaggers目录加载DLL工具失败: {Message}", ex.Message);
             }
         }
 

@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
 
-// 注册Swagger导入服务
+// 注册服务
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<SwaggerImportService>();
 builder.Services.AddSingleton<ImportedToolsService>();
@@ -27,21 +27,9 @@ using var serviceProvider = builder.Services.BuildServiceProvider();
 // 先注册MCP服务
 var mcpBuilder = builder.Services.AddMcpServer();
 
-// 提前初始化ImportedToolsService，加载已编译的工具
+// 初始化ImportedToolsService，它会自动加载所有工具
 var importedToolsService = serviceProvider.GetRequiredService<ImportedToolsService>();
-Console.WriteLine($"已初始化ImportedToolsService，自动加载已编译的工具");
-
-// 提前初始化SwaggerImportService，让它生成动态类型
-var swaggerImportService = serviceProvider.GetRequiredService<SwaggerImportService>();
-Console.WriteLine($"已初始化SwaggerImportService");
-
-// 获取所有Swagger动态生成的工具类型
-var dynamicToolTypes = swaggerImportService.GetDynamicToolTypes();
-Console.WriteLine($"找到 {dynamicToolTypes.Count} 个Swagger动态工具类型");
-
-// 添加动态生成的Swagger工具类型
-mcpBuilder.WithSwaggerTools(dynamicToolTypes);
-Console.WriteLine($"已注册Swagger动态工具类型");
+Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
 
 // 最后注册程序集中的工具
 mcpBuilder.WithToolsFromAssembly();

@@ -143,6 +143,11 @@
             根据命名空间和类名加载已编译的工具
             </summary>
         </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.LoadSwaggerDllTools">
+            <summary>
+            从ImportedSwaggers目录加载DLL工具
+            </summary>
+        </member>
         <member name="M:MCPP.Net.Services.ImportedToolsService.SaveImportedTools">
             <summary>
             保存工具信息到文件
@@ -221,16 +226,6 @@
             <param name="toolType">工具类型</param>
             <returns>已注册的方法名列表</returns>
         </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.SaveSwaggerDefinition(MCPP.Net.Models.SwaggerImportRequest,System.String)">
-            <summary>
-            保存Swagger定义
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.LoadSavedSwaggerDefinitions">
-            <summary>
-            加载已保存的Swagger定义
-            </summary>
-        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.GetImportedTools">
             <summary>
             获取所有已导入的工具
@@ -262,26 +257,6 @@
         <member name="M:MCPP.Net.Services.SwaggerImportService.CleanupResources">
             <summary>
             清理资源
-            </summary>
-        </member>
-        <member name="T:MCPP.Net.Services.SwaggerStorageItem">
-            <summary>
-            Swagger存储项
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.Request">
-            <summary>
-            导入请求
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.SwaggerJson">
-            <summary>
-            Swagger JSON内容
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.ImportDate">
-            <summary>
-            导入日期
             </summary>
         </member>
         <member name="T:MCPP.Net.SwaggerImportExtensions">

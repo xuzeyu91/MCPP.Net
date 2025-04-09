@@ -117,9 +117,6 @@ namespace MCPP.Net.Services
                 _importedTools.Add(key, importedTool);
             }
 
-            // 保存Swagger定义
-            SaveSwaggerDefinition(request, swaggerJson);
-
             // 6. 返回导入结果
             return new SwaggerImportResult
             {
@@ -878,141 +875,6 @@ namespace MCPP.Net.Services
         }
 
         /// <summary>
-        /// 保存Swagger定义
-        /// </summary>
-        private void SaveSwaggerDefinition(SwaggerImportRequest request, string swaggerJson)
-        {
-            try
-            {
-                string fileName = $"{request.NameSpace}.{request.ClassName}.json";
-                string filePath = Path.Combine(_storageDirectory, fileName);
-
-                // 创建包含swagger定义和请求信息的完整存储对象
-                var storageObject = new SwaggerStorageItem
-                {
-                    Request = request,
-                    SwaggerJson = swaggerJson,
-                    ImportDate = DateTime.Now
-                };
-
-                string storageJson = JsonConvert.SerializeObject(storageObject, Formatting.Indented);
-                File.WriteAllText(filePath, storageJson);
-
-                _logger.LogInformation("已保存Swagger定义: {FilePath}", filePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "保存Swagger定义失败: {Message}", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// 加载已保存的Swagger定义
-        /// </summary>
-        private void LoadSavedSwaggerDefinitions()
-        {
-            try
-            {
-                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
-                _logger.LogInformation("找到 {Count} 个已保存的Swagger定义", swaggerFiles.Length);
-
-                foreach (var file in swaggerFiles)
-                {
-                    try
-                    {
-                        string json = File.ReadAllText(file);
-                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
-
-                        if (storageItem != null)
-                        {
-                            _logger.LogInformation("加载Swagger定义: {NameSpace}.{ClassName}",
-                                storageItem.Request.NameSpace, storageItem.Request.ClassName);
-
-                            // 解析JSON并注册工具
-                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
-
-                            // 获取服务器基础URL
-                            string baseUrl = "";
-                            // 优先使用用户提供的源服务器URL
-                            if (!string.IsNullOrEmpty(storageItem.Request.SourceBaseUrl))
-                            {
-                                baseUrl = storageItem.Request.SourceBaseUrl;
-                                _logger.LogInformation("使用用户提供的源服务器URL: {BaseUrl}", baseUrl);
-                            }
-                            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
-                            {
-                                JArray servers = (JArray)swaggerDoc["servers"]!;
-                                if (servers.Count > 0 && servers[0]["url"] != null)
-                                {
-                                    baseUrl = servers[0]["url"]!.ToString();
-                                    _logger.LogInformation("从Swagger文档中获取服务器URL: {BaseUrl}", baseUrl);
-                                }
-                            }
-
-                            // 检查程序集是否已经存在
-                            string assemblyFileName = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}.dll";
-                            string assemblyPath = Path.Combine(_assemblyDirectory, assemblyFileName);
-                            Type? toolType = null;
-
-                            if (File.Exists(assemblyPath))
-                            {
-                                try
-                                {
-                                    // 尝试加载已有的程序集
-                                    Assembly assembly = Assembly.LoadFrom(assemblyPath);
-                                    toolType = assembly.GetType($"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}");
-                                    _logger.LogInformation("已加载现有工具程序集: {Path}", assemblyPath);
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "加载已有程序集失败: {Path}, 将重新生成", assemblyPath);
-                                }
-                            }
-
-                            if (toolType == null)
-                            {
-                                // 动态生成API工具类
-                                toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
-                            }
-
-                            // 注册工具方法到MCP服务
-                            List<string> registeredMethods = RegisterToolMethods(toolType);
-
-                            // 记录导入工具信息
-                            var importedTool = new ImportedTool
-                            {
-                                NameSpace = storageItem.Request.NameSpace,
-                                ClassName = storageItem.Request.ClassName,
-                                ApiCount = registeredMethods.Count,
-                                ImportDate = storageItem.ImportDate,
-                                SwaggerSource = storageItem.Request.SwaggerUrl,
-                                SourceBaseUrl = storageItem.Request.SourceBaseUrl
-                            };
-
-                            string key = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}";
-                            if (_importedTools.ContainsKey(key))
-                            {
-                                _importedTools[key] = importedTool;
-                            }
-                            else
-                            {
-                                _importedTools.Add(key, importedTool);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "加载Swagger定义失败: {File}, {Message}", file, ex.Message);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "加载Swagger定义失败: {Message}", ex.Message);
-            }
-        }
-
-        /// <summary>
         /// 获取所有已导入的工具
         /// </summary>
         /// <returns>已导入的工具列表</returns>
@@ -1031,62 +893,38 @@ namespace MCPP.Net.Services
 
             try
             {
-                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
-                foreach (var file in swaggerFiles)
+                // 只搜索DLL文件
+                var assemblyFiles = Directory.GetFiles(_assemblyDirectory, "*.dll");
+                foreach (var file in assemblyFiles)
                 {
                     try
                     {
-                        string json = File.ReadAllText(file);
-                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
+                        string fileName = Path.GetFileNameWithoutExtension(file);
+                        // 检查是否以命名空间.类名开头(然后是下划线和时间戳)
+                        int underscoreIndex = fileName.IndexOf('_');
+                        if (underscoreIndex == -1) continue; // 跳过不符合命名规则的DLL
+                        
+                        string fullName = fileName.Substring(0, underscoreIndex);
+                        int lastDotIndex = fullName.LastIndexOf('.');
+                        if (lastDotIndex == -1) continue;
 
-                        if (storageItem != null)
+                        string nameSpace = fullName.Substring(0, lastDotIndex);
+                        string className = fullName.Substring(lastDotIndex + 1);
+
+                        // 加载程序集
+                        try
                         {
-                            // 检查程序集是否已经存在
-                            string assemblyFileName = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}.dll";
-                            string assemblyPath = Path.Combine(_assemblyDirectory, assemblyFileName);
-                            Type? toolType = null;
+                            Assembly assembly = Assembly.LoadFrom(file);
+                            Type? toolType = assembly.GetType($"{nameSpace}.{className}");
 
-                            if (File.Exists(assemblyPath))
+                            if (toolType != null)
                             {
-                                try
-                                {
-                                    // 尝试加载已有的程序集
-                                    Assembly assembly = Assembly.LoadFrom(assemblyPath);
-                                    toolType = assembly.GetType($"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}");
-
-                                    if (toolType != null)
-                                    {
-                                        toolTypes.Add(toolType);
-                                        continue;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "加载已有程序集失败: {Path}", assemblyPath);
-                                }
+                                toolTypes.Add(toolType);
                             }
-
-                            // 如果程序集不存在或加载失败，重新生成
-                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
-
-                            // 获取服务器基础URL
-                            string baseUrl = "";
-                            if (!string.IsNullOrEmpty(storageItem.Request.SourceBaseUrl))
-                            {
-                                baseUrl = storageItem.Request.SourceBaseUrl;
-                            }
-                            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
-                            {
-                                JArray servers = (JArray)swaggerDoc["servers"]!;
-                                if (servers.Count > 0 && servers[0]["url"] != null)
-                                {
-                                    baseUrl = servers[0]["url"]!.ToString();
-                                }
-                            }
-
-                            // 创建工具类型
-                            toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
-                            toolTypes.Add(toolType);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "加载已有程序集失败: {Path}", file);
                         }
                     }
                     catch (Exception ex)
@@ -1122,20 +960,12 @@ namespace MCPP.Net.Services
 
             try
             {
-                // 删除存储的JSON文件
-                string jsonFilePath = Path.Combine(_storageDirectory, $"{key}.json");
-                if (File.Exists(jsonFilePath))
+                // 删除程序集文件 - 可能有多个时间戳版本
+                var assemblyFiles = Directory.GetFiles(_assemblyDirectory, $"{key}_*.dll");
+                foreach (var assemblyFile in assemblyFiles)
                 {
-                    File.Delete(jsonFilePath);
-                    _logger.LogInformation("已删除工具定义文件: {FilePath}", jsonFilePath);
-                }
-
-                // 删除程序集文件
-                string assemblyFilePath = Path.Combine(_assemblyDirectory, $"{key}.dll");
-                if (File.Exists(assemblyFilePath))
-                {
-                    File.Delete(assemblyFilePath);
-                    _logger.LogInformation("已删除工具程序集文件: {FilePath}", assemblyFilePath);
+                    File.Delete(assemblyFile);
+                    _logger.LogInformation("已删除工具程序集文件: {FilePath}", assemblyFile);
                 }
 
                 // 从字典中移除记录
@@ -1183,26 +1013,5 @@ namespace MCPP.Net.Services
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Swagger存储项
-    /// </summary>
-    public class SwaggerStorageItem
-    {
-        /// <summary>
-        /// 导入请求
-        /// </summary>
-        public SwaggerImportRequest Request { get; set; } = new SwaggerImportRequest();
-
-        /// <summary>
-        /// Swagger JSON内容
-        /// </summary>
-        public string SwaggerJson { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 导入日期
-        /// </summary>
-        public DateTime ImportDate { get; set; }
     }
 }

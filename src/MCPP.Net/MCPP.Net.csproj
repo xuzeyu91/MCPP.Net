@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <Folder Include="ImportedSwaggers\" />
+    <Folder Include="ImportedTools\" />
   </ItemGroup>
 
 </Project>
