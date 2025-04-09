@@ -18,23 +18,21 @@ builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>
 
 // 注册服务
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<SwaggerImportService>();
 builder.Services.AddSingleton<ImportedToolsService>();
+builder.Services.AddSingleton<SwaggerImportService>();
 
-// 获取服务提供程序
-using var serviceProvider = builder.Services.BuildServiceProvider();
-
-// 先注册MCP服务
+// 构建MCP服务
 var mcpBuilder = builder.Services.AddMcpServer();
 
-// 初始化ImportedToolsService，它会自动加载所有工具
-var importedToolsService = serviceProvider.GetRequiredService<ImportedToolsService>();
-Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
-
-// 最后注册程序集中的工具
+// 注册程序集中的工具 - 必须在Build()之前完成
 mcpBuilder.WithToolsFromAssembly();
 
+// 构建应用
 var app = builder.Build();
+
+// 初始化ImportedToolsService，它会自动加载所有工具
+var importedToolsService = app.Services.GetRequiredService<ImportedToolsService>();
+Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

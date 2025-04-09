@@ -85,7 +85,7 @@ namespace MCPP.Net.Services
                 var methods = toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
                     .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
 
-                _methodRegistry.Clear();
+                // 添加方法到MCP服务，不清空现有方法
                 foreach (var method in methods)
                 {
                     _methodRegistry.AddMethod(method);
@@ -146,7 +146,7 @@ namespace MCPP.Net.Services
                                 
                                 if (methods.Count > 0)
                                 {
-                                    // 为每个找到的方法注册到MCP服务
+                                    // 为每个找到的方法注册到MCP服务，不清空现有注册
                                     foreach (var method in methods)
                                     {
                                         _methodRegistry.AddMethod(method);
@@ -233,6 +233,34 @@ namespace MCPP.Net.Services
             {
                 _logger.LogError(ex, "加载已导入工具信息失败: {Message}", ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 从导入工具列表中删除工具
+        /// </summary>
+        /// <param name="nameSpace">命名空间</param>
+        /// <param name="className">类名</param>
+        /// <returns>是否成功删除</returns>
+        public bool RemoveImportedTool(string nameSpace, string className)
+        {
+            var tool = _importedTools.FirstOrDefault(t => 
+                t.NameSpace == nameSpace && t.ClassName == className);
+                
+            if (tool == null)
+            {
+                _logger.LogWarning("尝试删除不存在的工具: {NameSpace}.{ClassName}", nameSpace, className);
+                return false;
+            }
+            
+            bool removed = _importedTools.Remove(tool);
+            if (removed)
+            {
+                // 保存更新后的工具信息
+                SaveImportedTools();
+                _logger.LogInformation("已从导入工具列表中删除工具: {NameSpace}.{ClassName}", nameSpace, className);
+            }
+            
+            return removed;
         }
     }
 } 

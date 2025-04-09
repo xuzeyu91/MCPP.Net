@@ -158,6 +158,14 @@
             从文件加载工具信息
             </summary>
         </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.RemoveImportedTool(System.String,System.String)">
+            <summary>
+            从导入工具列表中删除工具
+            </summary>
+            <param name="nameSpace">命名空间</param>
+            <param name="className">类名</param>
+            <returns>是否成功删除</returns>
+        </member>
         <member name="T:MCPP.Net.Services.SwaggerImportService">
             <summary>
             Swagger导入服务

@@ -26,6 +26,7 @@ namespace MCPP.Net.Services
         private readonly IMcpServerMethodRegistry _methodRegistry;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly ImportedToolsService _importedToolsService;
         private static readonly Dictionary<string, ImportedTool> _importedTools = new Dictionary<string, ImportedTool>();
         private readonly string _storageDirectory;
         private readonly string _assemblyDirectory;
@@ -34,12 +35,14 @@ namespace MCPP.Net.Services
             ILogger<SwaggerImportService> logger,
             IMcpServerMethodRegistry methodRegistry,
             IHttpClientFactory httpClientFactory,
-            IWebHostEnvironment hostEnvironment)
+            IWebHostEnvironment hostEnvironment,
+            ImportedToolsService importedToolsService)
         {
             _logger = logger;
             _methodRegistry = methodRegistry;
             _httpClientFactory = httpClientFactory;
             _hostEnvironment = hostEnvironment;
+            _importedToolsService = importedToolsService;
             _storageDirectory = Path.Combine(_hostEnvironment.ContentRootPath, "ImportedSwaggers");
             _assemblyDirectory = _storageDirectory; // 使用相同目录存储程序集
 
@@ -116,6 +119,9 @@ namespace MCPP.Net.Services
             {
                 _importedTools.Add(key, importedTool);
             }
+            
+            // 将工具信息保存到ImportedToolsService，确保程序重启后能自动加载
+            _importedToolsService.AddImportedTool(importedTool);
 
             // 6. 返回导入结果
             return new SwaggerImportResult
@@ -855,7 +861,7 @@ namespace MCPP.Net.Services
             var methods = toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
 
-            _methodRegistry.Clear();
+            // 不清空现有注册，只添加新方法
             foreach (var method in methods)
             {
                 // 注册到MCP服务
@@ -970,6 +976,9 @@ namespace MCPP.Net.Services
 
                 // 从字典中移除记录
                 _importedTools.Remove(key);
+                
+                // 从ImportedToolsService中移除工具信息
+                _importedToolsService.RemoveImportedTool(nameSpace, className);
 
                 _logger.LogInformation("已成功删除工具: {Key}", key);
                 return true;
