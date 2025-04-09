@@ -27,7 +27,6 @@ namespace MCPP.Net.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly ImportedToolsService _importedToolsService;
-        private static readonly Dictionary<string, ImportedTool> _importedTools = new Dictionary<string, ImportedTool>();
         private readonly string _storageDirectory;
         private readonly string _assemblyDirectory;
 
@@ -51,9 +50,6 @@ namespace MCPP.Net.Services
             {
                 Directory.CreateDirectory(_storageDirectory);
             }
-
-            // 加载已保存的Swagger定义
-            //LoadSavedSwaggerDefinitions();
         }
 
         /// <summary>
@@ -110,16 +106,6 @@ namespace MCPP.Net.Services
                 SourceBaseUrl = request.SourceBaseUrl
             };
 
-            string key = $"{request.NameSpace}.{request.ClassName}";
-            if (_importedTools.ContainsKey(key))
-            {
-                _importedTools[key] = importedTool;
-            }
-            else
-            {
-                _importedTools.Add(key, importedTool);
-            }
-            
             // 将工具信息保存到ImportedToolsService，确保程序重启后能自动加载
             _importedToolsService.AddImportedTool(importedTool);
 
@@ -886,7 +872,7 @@ namespace MCPP.Net.Services
         /// <returns>已导入的工具列表</returns>
         public IReadOnlyList<ImportedTool> GetImportedTools()
         {
-            return _importedTools.Values.ToList();
+            return _importedToolsService.GetImportedTools();
         }
 
         /// <summary>
@@ -958,7 +944,7 @@ namespace MCPP.Net.Services
             string key = $"{nameSpace}.{className}";
 
             // 检查工具是否存在
-            if (!_importedTools.ContainsKey(key))
+            if (!_importedToolsService.GetImportedTools().Any(t => t.NameSpace == nameSpace && t.ClassName == className))
             {
                 _logger.LogWarning("尝试删除不存在的工具: {Key}", key);
                 return false;
@@ -974,9 +960,6 @@ namespace MCPP.Net.Services
                     _logger.LogInformation("已删除工具程序集文件: {FilePath}", assemblyFile);
                 }
 
-                // 从字典中移除记录
-                _importedTools.Remove(key);
-                
                 // 从ImportedToolsService中移除工具信息
                 _importedToolsService.RemoveImportedTool(nameSpace, className);
 
