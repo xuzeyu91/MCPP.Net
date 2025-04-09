@@ -59,5 +59,10 @@ app.UseSwaggerUI(c =>
 app.UseAuthorization();
 app.MapControllers();
 app.MapMcp();
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "import.html" }
+});
+
 app.UseStaticFiles();
 app.Run(); 
