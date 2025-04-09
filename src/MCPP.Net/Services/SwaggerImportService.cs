@@ -862,8 +862,15 @@ namespace MCPP.Net.Services
             foreach (var method in methods)
             {
                 // 注册到MCP服务
-                _methodRegistry.AddMethod(method);
-                registeredMethods.Add(method.Name);
+                if (!registeredMethods.Contains(method.Name))
+                {
+                    _methodRegistry.AddMethod(method);
+                    registeredMethods.Add(method.Name);
+                }
+                else 
+                {
+                    _logger.LogInformation($"{method.Name} 重复注册");
+                }
             }
 
             _logger.LogInformation("已注册 {Count} 个方法到MCP服务", registeredMethods.Count);
