@@ -12,7 +12,7 @@ MCPP.Net允许你将任意OpenAPI/Swagger定义的RESTful API服务动态转换�
 
 - 🔄 **动态Swagger导入**：通过URL或本地文件导入Swagger/OpenAPI定义
 - 🛠️ **自动工具生成**：将API端点自动转换为MCP工具方法
-- 🔌 **即插即用**：导入后立即可用，无需重启服务 （暂未实现）
+- 🔌 **即插即用**：导入后立即可用，无需重启服务
 - 📝 **Swagger UI支持**：内置Swagger UI，便于API测试和文档查看
 - 📋 **工具管理**：支持查看和删除已导入的工具
 - 🔄 **MCP协议实现**：完整支持Model Context Protocol
