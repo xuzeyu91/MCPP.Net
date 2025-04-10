@@ -1,8 +1,7 @@
 using MCPP.Net;
+using MCPP.Net.Core;
 using MCPP.Net.Services;
 using ModelContextProtocol.Server;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,12 +19,16 @@ builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<ImportedToolsService>();
 builder.Services.AddSingleton<SwaggerImportService>();
+builder.Services.AddSingleton<IToolAssemblyLoader, ToolAssemblyLoader>();
+builder.Services.AddSingleton<IAssemblyBuilder, CecilAssemblyBuilder>();
 
 // 构建MCP服务
 var mcpBuilder = builder.Services.AddMcpServer();
 
 // 注册程序集中的工具 - 必须在Build()之前完成
 mcpBuilder.WithToolsFromAssembly();
+
+mcpBuilder.UseToolsKeeper();
 
 // 构建应用
 var app = builder.Build();

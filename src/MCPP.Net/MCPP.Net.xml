@@ -30,6 +30,105 @@
             <param name="className">类名</param>
             <returns>操作结果</returns>
         </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
+            <summary>
+            创建动态方法
+            </summary>
+            <param name="moduleDefinition">模块定义</param>
+            <param name="typeDefinition">类型定义</param>
+            <param name="operationId">操作ID</param>
+            <param name="path">API路径</param>
+            <param name="httpMethod">HTTP方法</param>
+            <param name="summary">摘要</param>
+            <param name="description">描述</param>
+            <param name="operation">操作定义</param>
+            <param name="baseUrl">API基础URL</param>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.GenerateSchemaDescription(Newtonsoft.Json.Linq.JObject,System.Text.StringBuilder,System.Int32)">
+            <summary>
+            生成Schema的描述信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.NormalizeMethodName(System.String)">
+            <summary>
+            规范化方法名
+            </summary>
+            <param name="operationId">操作ID</param>
+            <returns>规范化的方法名</returns>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.NormalizeParameterName(System.String)">
+            <summary>
+            规范化参数名
+            </summary>
+            <param name="paramName">参数名</param>
+            <returns>规范化的参数名</returns>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.FindParameterIndex(Mono.Collections.Generic.Collection{Mono.Cecil.ParameterDefinition},System.String)">
+            <summary>
+            查找参数在集合中的索引
+            </summary>
+            <param name="parameters">参数集合</param>
+            <param name="name">参数名</param>
+            <returns>参数索引，找不到返回-1</returns>
+        </member>
+        <member name="T:MCPP.Net.Core.McpServerExtensions">
+            <summary>
+            <see cref="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder"/> extension methods
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerExtensions.UseToolsKeeper(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder)">
+            <summary>
+            使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Core.McpServerOptionsPostConfigure">
+            <summary>
+            覆盖 <see cref="T:ModelContextProtocol.Server.McpServerOptions"/> 默认配置，使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerOptionsPostConfigure.#ctor(MCPP.Net.Core.McpToolsKeeper)">
+            <summary>
+            覆盖 <see cref="T:ModelContextProtocol.Server.McpServerOptions"/> 默认配置，使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerOptionsPostConfigure.PostConfigure(System.String,ModelContextProtocol.Server.McpServerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:MCPP.Net.Core.McpToolsKeeper">
+            <summary>
+            Tool 管理员，可以在运行时添加和删除 Tools
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.#ctor(Microsoft.Extensions.Logging.ILogger{MCPP.Net.Core.McpToolsKeeper})">
+            <summary>
+            Tool 管理员，可以在运行时添加和删除 Tools
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.SetTools(ModelContextProtocol.Protocol.Types.ToolsCapability)">
+            <summary>
+            使用原始配置初始化<see cref="T:MCPP.Net.Core.McpToolsKeeper"/>
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.Add(System.String,System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerTool})">
+            <summary>
+            添加一个新的 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.Remove(System.String)">
+            <summary>
+            移除一个 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.ListToolsHandler(ModelContextProtocol.Server.RequestContext{ModelContextProtocol.Protocol.Types.ListToolsRequestParams},System.Threading.CancellationToken)">
+            <summary>
+            获取所有 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.CallToolHandler(ModelContextProtocol.Server.RequestContext{ModelContextProtocol.Protocol.Types.CallToolRequestParams},System.Threading.CancellationToken)">
+            <summary>
+            调用指定的 Tool
+            </summary>
+        </member>
         <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
             <summary>
             Sets up endpoints for handling MCP HTTP Streaming transport.
@@ -185,55 +284,6 @@
             <param name="swaggerUrlOrPath">Swagger URL或本地文件路径</param>
             <returns>Swagger JSON内容</returns>
         </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateDynamicToolType(Newtonsoft.Json.Linq.JObject,MCPP.Net.Models.SwaggerImportRequest,System.String)">
-            <summary>
-            生成动态工具类型
-            </summary>
-            <param name="swaggerDoc">Swagger文档对象</param>
-            <param name="request">导入请求</param>
-            <param name="baseUrl">API基础URL</param>
-            <returns>生成的动态类型</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
-            <summary>
-            创建动态方法
-            </summary>
-            <param name="moduleDefinition">模块定义</param>
-            <param name="typeDefinition">类型定义</param>
-            <param name="operationId">操作ID</param>
-            <param name="path">API路径</param>
-            <param name="httpMethod">HTTP方法</param>
-            <param name="summary">摘要</param>
-            <param name="description">描述</param>
-            <param name="operation">操作定义</param>
-            <param name="baseUrl">API基础URL</param>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateSchemaDescription(Newtonsoft.Json.Linq.JObject,System.Text.StringBuilder,System.Int32)">
-            <summary>
-            生成Schema的描述信息
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeMethodName(System.String)">
-            <summary>
-            规范化方法名
-            </summary>
-            <param name="operationId">操作ID</param>
-            <returns>规范化的方法名</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeParameterName(System.String)">
-            <summary>
-            规范化参数名
-            </summary>
-            <param name="paramName">参数名</param>
-            <returns>规范化的参数名</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.RegisterToolMethods(System.Type)">
-            <summary>
-            注册工具方法到MCP服务
-            </summary>
-            <param name="toolType">工具类型</param>
-            <returns>已注册的方法名列表</returns>
-        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.GetImportedTools">
             <summary>
             获取所有已导入的工具
@@ -254,14 +304,6 @@
             <param name="className">类名</param>
             <returns>是否删除成功</returns>
         </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.FindParameterIndex(Mono.Collections.Generic.Collection{Mono.Cecil.ParameterDefinition},System.String)">
-            <summary>
-            查找参数在集合中的索引
-            </summary>
-            <param name="parameters">参数集合</param>
-            <param name="name">参数名</param>
-            <returns>参数索引，找不到返回-1</returns>
-        </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.CleanupResources">
             <summary>
             清理资源
@@ -279,6 +321,40 @@
             <param name="builder">MCP服务器构建器</param>
             <param name="dynamicToolTypes">动态生成的工具类型列表</param>
             <returns>MCP服务器构建器</returns>
+        </member>
+        <member name="T:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool">
+            <summary>
+            https://github.com/modelcontextprotocol/csharp-sdk/blob/4c537ef86bd8bb10980962a8f0bac001453c5cd9/src/ModelContextProtocol/Server/AIFunctionMcpServerTool.cs
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool.Create(System.Reflection.MethodInfo,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            
+            </summary>
+            <remarks>
+            Microsoft.Extensions.AI 内部会使用 JsonSerializerOptions，
+            </remarks>
+        </member>
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool.Create(System.Reflection.MethodInfo,System.Object,ModelContextProtocol.Server.McpServerToolCreateOptions,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            
+            </summary>
+            <param name="method"></param>
+            <param name="target"></param>
+            <param name="options"></param>
+            <param name="serializerOptions"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MCPP.Net.UnsafeImports.UnsafeAIJsonUtilities">
+            <summary>
+            https://github.com/dotnet/extensions/blob/f1f17e642a685df7e87b805be1efe4729ff725e4/src/Libraries/Microsoft.Extensions.AI.Abstractions/Utilities/AIJsonUtilities.Defaults.cs#L43-L73
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIJsonUtilities.CreateDefaultOptions">
+            <summary>
+            调用私有方法 Microsoft.Extensions.AI.AIJsonUtilities.CreateDefaultOptions
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
             <summary>

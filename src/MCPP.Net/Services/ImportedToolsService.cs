@@ -1,7 +1,7 @@
+using MCPP.Net.Core;
 using MCPP.Net.Models;
 using ModelContextProtocol.Server;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 
 namespace MCPP.Net.Services
@@ -13,6 +13,7 @@ namespace MCPP.Net.Services
     {
         private readonly ILogger<ImportedToolsService> _logger;
         private readonly IMcpServerMethodRegistry _methodRegistry;
+        private readonly IToolAssemblyLoader _assemblyLoader;
         private readonly string _toolsStoragePath;
         private readonly string _swaggerDllPath;
         private readonly List<ImportedTool> _importedTools = new List<ImportedTool>();
@@ -20,10 +21,12 @@ namespace MCPP.Net.Services
         public ImportedToolsService(
             ILogger<ImportedToolsService> logger,
             IMcpServerMethodRegistry methodRegistry,
-            IWebHostEnvironment hostEnvironment)
+            IWebHostEnvironment hostEnvironment,
+            IToolAssemblyLoader assemblyLoader)
         {
             _logger = logger;
             _methodRegistry = methodRegistry;
+            _assemblyLoader = assemblyLoader;
             _toolsStoragePath = Path.Combine(hostEnvironment.ContentRootPath, "ImportedTools");
             _swaggerDllPath = Path.Combine(hostEnvironment.ContentRootPath, "ImportedSwaggers");
             
@@ -124,57 +127,9 @@ namespace MCPP.Net.Services
                 {
                     try
                     {
-                        // 加载程序集
-                        var assembly = Assembly.LoadFrom(dllFile);
-                        _logger.LogInformation("已加载程序集: {AssemblyName}", assembly.GetName().Name);
-                        
-                        // 获取程序集中所有类型
-                        var types = assembly.GetTypes();
-                        
-                        foreach (var type in types)
-                        {
-                            // 查找带有McpServerToolType特性的类型
-                            var toolTypeAttr = type.GetCustomAttribute<McpServerToolTypeAttribute>();
-                            if (toolTypeAttr != null)
-                            {
-                                _logger.LogInformation("找到工具类型: {TypeName}", type.FullName);
-                                
-                                // 获取所有带有McpServerTool特性的方法
-                                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                                    .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null)
-                                    .ToList();
-                                
-                                if (methods.Count > 0)
-                                {
-                                    // 为每个找到的方法注册到MCP服务，不清空现有注册
-                                    foreach (var method in methods)
-                                    {
-                                        _methodRegistry.AddMethod(method);
-                                    }
-                                    
-                                    _logger.LogInformation("已注册 {Count} 个方法, 来自 {TypeName}", 
-                                        methods.Count, type.FullName);
-                                    
-                                    // 添加到导入工具列表，方便管理
-                                    var importedTool = new ImportedTool
-                                    {
-                                        NameSpace = type.Namespace ?? "UnknownNamespace",
-                                        ClassName = type.Name,
-                                        ApiCount = methods.Count,
-                                        ImportDate = DateTime.Now,
-                                        SwaggerSource = "ImportedSwaggers目录自动加载",
-                                        SourceBaseUrl = ""
-                                    };
-                                    
-                                    // 只有当列表中不存在相同命名空间和类名的工具时才添加
-                                    if (!_importedTools.Any(t => t.NameSpace == importedTool.NameSpace && 
-                                                              t.ClassName == importedTool.ClassName))
-                                    {
-                                        _importedTools.Add(importedTool);
-                                    }
-                                }
-                            }
-                        }
+                        var loadedDetial = _assemblyLoader.Load(dllFile);
+
+                        _importedTools.AddRange(loadedDetial.ImportedTools);
                     }
                     catch (Exception ex)
                     {
@@ -214,25 +169,25 @@ namespace MCPP.Net.Services
                 return;
             }
 
-            try
-            {
-                var json = File.ReadAllText(filePath);
-                var tools = JsonSerializer.Deserialize<List<ImportedTool>>(json);
-                if (tools != null)
-                {
-                    _importedTools.AddRange(tools);
+            //try
+            //{
+            //    var json = File.ReadAllText(filePath);
+            //    var tools = JsonSerializer.Deserialize<List<ImportedTool>>(json);
+            //    if (tools != null)
+            //    {
+            //        _importedTools.AddRange(tools);
                     
-                    // 尝试加载所有已导入的工具
-                    foreach (var tool in _importedTools)
-                    {
-                        LoadCompiledTool(tool.NameSpace, tool.ClassName);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "加载已导入工具信息失败: {Message}", ex.Message);
-            }
+            //        // 尝试加载所有已导入的工具
+            //        foreach (var tool in _importedTools)
+            //        {
+            //            LoadCompiledTool(tool.NameSpace, tool.ClassName);
+            //        }
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "加载已导入工具信息失败: {Message}", ex.Message);
+            //}
         }
 
         /// <summary>
@@ -253,6 +208,7 @@ namespace MCPP.Net.Services
             }
             
             bool removed = _importedTools.Remove(tool);
+            _assemblyLoader.Unload($"{nameSpace}.{className}");
             if (removed)
             {
                 // 保存更新后的工具信息
