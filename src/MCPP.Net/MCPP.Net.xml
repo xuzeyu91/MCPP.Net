@@ -30,6 +30,11 @@
             <param name="className">类名</param>
             <returns>操作结果</returns>
         </member>
+        <member name="T:MCPP.Net.Core.CecilAssemblyBuilder">
+            <summary>
+            使用 Mono.Cecil 动态生成程序集
+            </summary>
+        </member>
         <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
             <summary>
             创建动态方法
@@ -70,6 +75,35 @@
             <param name="parameters">参数集合</param>
             <param name="name">参数名</param>
             <returns>参数索引，找不到返回-1</returns>
+        </member>
+        <member name="T:MCPP.Net.Core.IAssemblyBuilder">
+            <summary>
+            程序集生成器标准接口
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.IAssemblyBuilder.Build(Newtonsoft.Json.Linq.JObject,MCPP.Net.Models.SwaggerImportRequest,System.String)">
+            <summary>
+            根据Swagger文档和请求信息动态生成程序集
+            </summary>
+            <returns>程序集文件路径</returns>
+        </member>
+        <member name="T:MCPP.Net.Core.IToolAssemblyLoader">
+            <summary>
+            管控程序集的加载和卸载，避免因外部引用导致无法卸载程序集
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)">
+            <summary>
+            加载程序集
+            </summary>
+            <remarks>
+            返回值不要包含 <see cref="T:System.Reflection.Assembly"/>, <see cref="T:System.Type"/>, <see cref="T:System.Runtime.Loader.AssemblyLoadContext"/> 等反射相关类型以及动态程序集中的类型实例，否则在卸载程序集时，可能因外部依赖导致无法卸载程序集
+            </remarks>
+        </member>
+        <member name="M:MCPP.Net.Core.IToolAssemblyLoader.Unload(System.String)">
+            <summary>
+            卸载程序集
+            </summary>
         </member>
         <member name="T:MCPP.Net.Core.McpServerExtensions">
             <summary>
@@ -127,6 +161,60 @@
         <member name="M:MCPP.Net.Core.McpToolsKeeper.CallToolHandler(ModelContextProtocol.Server.RequestContext{ModelContextProtocol.Protocol.Types.CallToolRequestParams},System.Threading.CancellationToken)">
             <summary>
             调用指定的 Tool
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Core.PluginAssembly">
+            <summary>
+            程序集元数据信息，方便统一管理释放
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.PluginAssembly.#ctor(System.Reflection.Assembly,System.Runtime.Loader.AssemblyLoadContext)">
+            <summary>
+            程序集元数据信息，方便统一管理释放
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Core.PluginAssembly.SerializerOptions">
+            <summary>
+            绑定到程序集的 <see cref="T:System.Text.Json.JsonSerializerOptions"/>
+            </summary>
+            <remarks>
+            Microsoft.Extensions.Ai 内部通过 ConditionalWeakTable 缓存了 Tool 对应的 MethodInfo 信息，如果不释放将无法卸载程序集。
+            ConditionalWeakTable 的 Key 为 <see cref="T:System.Text.Json.JsonSerializerOptions"/> 对象，所以可以将整个程序集的所有 Tools 对应到一个 <see cref="T:System.Text.Json.JsonSerializerOptions"/> 上，在卸载程序集前删除对象引用即可<br/>
+            https://github.com/dotnet/extensions/blob/f1f17e642a685df7e87b805be1efe4729ff725e4/src/Libraries/Microsoft.Extensions.AI/Functions/AIFunctionFactory.cs#L219-L247
+            </remarks>
+        </member>
+        <member name="P:MCPP.Net.Core.PluginAssembly.Assembly">
+            <summary>
+            动态生成的程序集
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.PluginAssembly.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:MCPP.Net.Core.ToolAssemblyLoader">
+            <summary>
+            <see cref="T:MCPP.Net.Core.IToolAssemblyLoader"/> 的默认实现
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.#ctor(MCPP.Net.Core.McpToolsKeeper,Microsoft.Extensions.Logging.ILogger{MCPP.Net.Core.ToolAssemblyLoader})">
+            <summary>
+            <see cref="T:MCPP.Net.Core.IToolAssemblyLoader"/> 的默认实现
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.Load(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.Unload(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="T:MCPP.Net.Core.ToolLoadedDetail">
+            <summary>
+            <see cref="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)"/> 的返回值，包含了加载的具体信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolLoadedDetail.#ctor(System.Collections.Generic.List{System.String},System.Collections.Generic.List{MCPP.Net.Models.ImportedTool})">
+            <summary>
+            <see cref="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)"/> 的返回值，包含了加载的具体信息
             </summary>
         </member>
         <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
