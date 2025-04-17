@@ -73,19 +73,19 @@ namespace MCPP.Net.Core
         /// <summary>
         /// 获取所有 Tool 集合
         /// </summary>
-        public Task<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken token)
+        public ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken token)
         {
             var result = new ListToolsResult();
 
             result.Tools.AddRange(_map.Values.SelectMany(x => x).Select(x => x.Value.ProtocolTool));
 
-            return Task.FromResult(result);
+            return ValueTask.FromResult(result);
         }
 
         /// <summary>
         /// 调用指定的 Tool
         /// </summary>
-        public Task<CallToolResponse> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken token)
+        public ValueTask<CallToolResponse> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken token)
         {
             if (context.Params is not null)
             {
