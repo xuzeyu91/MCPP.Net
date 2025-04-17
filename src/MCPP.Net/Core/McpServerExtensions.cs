@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using MCPP.Net.Services;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 
 namespace MCPP.Net.Core
@@ -15,6 +16,22 @@ namespace MCPP.Net.Core
         {
             builder.Services.AddSingleton<McpToolsKeeper>();
             builder.Services.AddTransient<IPostConfigureOptions<McpServerOptions>, McpServerOptionsPostConfigure>();
+
+            return builder;
+        }
+
+        public static IMcpServerBuilder WithDBTools(this IMcpServerBuilder builder, IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+
+            var toolAppService = scope.ServiceProvider.GetRequiredService<IToolAppService>();
+
+            var tools = toolAppService.Tools();
+
+            foreach (var tool in tools)
+            {
+                builder.Services.AddSingleton(tool);
+            }
 
             return builder;
         }

@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace ModelContextProtocol.Server
+namespace MCPP.Net.Services
 {
     /// <summary>
     /// MCP服务器方法注册接口

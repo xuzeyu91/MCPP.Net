@@ -1,7 +1,8 @@
-using Microsoft.Extensions.Options;
 using System.Reflection;
+using Microsoft.Extensions.Options;
+using ModelContextProtocol.Server;
 
-namespace ModelContextProtocol.Server
+namespace MCPP.Net.Services
 {
     /// <summary>
     /// MCP服务器方法注册实现
