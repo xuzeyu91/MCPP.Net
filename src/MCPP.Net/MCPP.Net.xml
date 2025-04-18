@@ -4,6 +4,260 @@
         <name>MCPP.Net</name>
     </assembly>
     <members>
+        <member name="T:MCPP.Net.Common.DependencyInjection.KeyedServiceDescriptionAttribute">
+            <summary>
+            标记服务描述特性（支持Keyed Service）
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.DependencyInjection.KeyedServiceDescriptionAttribute.ServiceType">
+            <summary>
+            服务类型
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.DependencyInjection.KeyedServiceDescriptionAttribute.ServiceKey">
+            <summary>
+            服务键
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.DependencyInjection.KeyedServiceDescriptionAttribute.Lifetime">
+            <summary>
+            生命周期
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.DependencyInjection.KeyedServiceDescriptionAttribute.#ctor(System.Type,System.Object,MCPP.Net.Common.DependencyInjection.ServiceLifetime)">
+            <summary>
+            初始化服务描述特性
+            </summary>
+            <param name="serviceType">服务类型</param>
+            <param name="serviceKey">服务键</param>
+            <param name="lifetime">生命周期</param>
+        </member>
+        <member name="T:MCPP.Net.Common.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            容器扩展
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.DependencyInjection.ServiceCollectionExtensions.AddServicesFromAssemblies(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
+            <summary>
+            从程序集中加载类型并添加到容器中
+            </summary>
+            <param name="services">容器</param>
+            <param name="assemblies">程序集集合</param>
+            <returns></returns>
+        </member>
+        <member name="F:MCPP.Net.Common.DependencyInjection.ServiceLifetime.Scoped">
+            <summary>
+            作用域
+            </summary>
+        </member>
+        <member name="F:MCPP.Net.Common.DependencyInjection.ServiceLifetime.Singleton">
+            <summary>
+            单例
+            </summary>
+        </member>
+        <member name="F:MCPP.Net.Common.DependencyInjection.ServiceLifetime.Transient">
+            <summary>
+            瞬时
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.Map.MapperExtend.ToDTOList``1(System.Object)">
+            <summary>
+            Entity集合转DTO集合
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Map.MapperExtend.ToDTO``1(System.Object)">
+            <summary>
+            Entity转DTO
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Map.MapperExtend.MapTo``1(System.Object,``0)">
+            <summary>
+            给已有对象map,适合update场景，如需过滤空值需要在AutoMapProfile 设置
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="self"></param>
+            <param name="result"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MCPP.Net.Common.Model.PagedInfo`1">
+            <summary>
+            分页参数
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagedInfo`1.PageSize">
+            <summary>
+            每页行数
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagedInfo`1.PageIndex">
+            <summary>
+            当前页
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagedInfo`1.TotalNum">
+            <summary>
+            总记录数
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagedInfo`1.TotalPage">
+            <summary>
+            总页数
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Common.Model.PageList`1">
+            <summary>
+            返回分页结果
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PageList`1.PageIndex">
+            <summary>
+            当前页，从1开始
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PageList`1.PageSize">
+            <summary>
+            每页数量
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PageList`1.TotalCount">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagerInfo.PageNum">
+            <summary>
+            当前页码
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.PagerInfo.PageSize">
+            <summary>
+            每页显示多少条
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.PagerInfo.#ctor">
+            <summary>
+            排序类型,前端传入的是"ascending"，"descending"
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.Result.Code">
+            <summary>
+            错误码，0是正常返回，异常返回错误码
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.Result.Data">
+            <summary>
+            返回数据
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.Result.Message">
+            <summary>
+            返回信息详情
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.HttpResult`1.Code">
+            <summary>
+            错误码，0是正常返回，异常返回错误码
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.HttpResult`1.Data">
+            <summary>
+            返回数据
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Model.HttpResult`1.Message">
+            <summary>
+            返回信息详情
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.ResponseResult.Success">
+            <summary>
+            执行成功
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.ResponseResult.Success(System.Object,System.String,System.String)">
+            <summary>
+            执行成功
+            </summary>
+            <param name="data"></param>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.ResponseResult.Error(System.Object,System.String,System.String)">
+            <summary>
+            执行失败
+            </summary>
+            <param name="data"></param>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.ResponseResult.Error(System.String,System.String)">
+            <summary>
+            执行失败
+            </summary>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.HttpResponseResult.Success``1">
+            <summary>
+            执行成功
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.HttpResponseResult.Error``1(System.String,System.String)">
+            <summary>
+            执行失败
+            </summary>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.HttpResponseResult.Success``1(System.Object,System.String,System.String)">
+            <summary>
+            执行成功
+            </summary>
+            <param name="data"></param>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.HttpResponseResult.Error``1(System.Object,System.String,System.String)">
+            <summary>
+            执行失败
+            </summary>
+            <param name="data"></param>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Common.Model.HttpResponseResult.Fail``1(System.Object,System.String,System.String)">
+            <summary>
+            执行失败
+            </summary>
+            <param name="data"></param>
+            <param name="code"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="P:MCPP.Net.Common.Options.ConnectionOptions.DbType">
+            <summary>
+            sqlite连接字符串
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Common.Options.ConnectionOptions.ConnectionStrings">
+            <summary>
+            pg链接字符串
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Controllers.ImportController">
             <summary>
             Swagger导入API控制器
@@ -30,6 +284,207 @@
             <param name="className">类名</param>
             <returns>操作结果</returns>
         </member>
+        <member name="T:MCPP.Net.Controllers.ToolController">
+            <summary>
+            手动添加工具
+            </summary>
+            <param name="mcpServerOptions"></param>
+            <param name="httpClientFactory"></param>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ToolController.#ctor(Microsoft.Extensions.Options.IOptions{ModelContextProtocol.Server.McpServerOptions},MCPP.Net.Services.IToolAppService,MCPP.Net.Repositories.IToolRepositories)">
+            <summary>
+            手动添加工具
+            </summary>
+            <param name="mcpServerOptions"></param>
+            <param name="httpClientFactory"></param>
+        </member>
+        <member name="T:MCPP.Net.Core.CecilAssemblyBuilder">
+            <summary>
+            使用 Mono.Cecil 动态生成程序集
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.CreateDynamicMethod(Mono.Cecil.ModuleDefinition,Mono.Cecil.TypeDefinition,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
+            <summary>
+            创建动态方法
+            </summary>
+            <param name="moduleDefinition">模块定义</param>
+            <param name="typeDefinition">类型定义</param>
+            <param name="operationId">操作ID</param>
+            <param name="path">API路径</param>
+            <param name="httpMethod">HTTP方法</param>
+            <param name="summary">摘要</param>
+            <param name="description">描述</param>
+            <param name="operation">操作定义</param>
+            <param name="baseUrl">API基础URL</param>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.GenerateSchemaDescription(Newtonsoft.Json.Linq.JObject,System.Text.StringBuilder,System.Int32)">
+            <summary>
+            生成Schema的描述信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.NormalizeMethodName(System.String)">
+            <summary>
+            规范化方法名
+            </summary>
+            <param name="operationId">操作ID</param>
+            <returns>规范化的方法名</returns>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.NormalizeParameterName(System.String)">
+            <summary>
+            规范化参数名
+            </summary>
+            <param name="paramName">参数名</param>
+            <returns>规范化的参数名</returns>
+        </member>
+        <member name="M:MCPP.Net.Core.CecilAssemblyBuilder.FindParameterIndex(Mono.Collections.Generic.Collection{Mono.Cecil.ParameterDefinition},System.String)">
+            <summary>
+            查找参数在集合中的索引
+            </summary>
+            <param name="parameters">参数集合</param>
+            <param name="name">参数名</param>
+            <returns>参数索引，找不到返回-1</returns>
+        </member>
+        <member name="T:MCPP.Net.Core.IAssemblyBuilder">
+            <summary>
+            程序集生成器标准接口
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.IAssemblyBuilder.Build(Newtonsoft.Json.Linq.JObject,MCPP.Net.Models.SwaggerImportRequest,System.String)">
+            <summary>
+            根据Swagger文档和请求信息动态生成程序集
+            </summary>
+            <returns>程序集文件路径</returns>
+        </member>
+        <member name="T:MCPP.Net.Core.IToolAssemblyLoader">
+            <summary>
+            管控程序集的加载和卸载，避免因外部引用导致无法卸载程序集
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)">
+            <summary>
+            加载程序集
+            </summary>
+            <remarks>
+            返回值不要包含 <see cref="T:System.Reflection.Assembly"/>, <see cref="T:System.Type"/>, <see cref="T:System.Runtime.Loader.AssemblyLoadContext"/> 等反射相关类型以及动态程序集中的类型实例，否则在卸载程序集时，可能因外部依赖导致无法卸载程序集
+            </remarks>
+        </member>
+        <member name="M:MCPP.Net.Core.IToolAssemblyLoader.Unload(System.String)">
+            <summary>
+            卸载程序集
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Core.McpServerExtensions">
+            <summary>
+            <see cref="T:Microsoft.Extensions.DependencyInjection.IMcpServerBuilder"/> extension methods
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerExtensions.UseToolsKeeper(Microsoft.Extensions.DependencyInjection.IMcpServerBuilder)">
+            <summary>
+            使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Core.McpServerOptionsPostConfigure">
+            <summary>
+            覆盖 <see cref="T:ModelContextProtocol.Server.McpServerOptions"/> 默认配置，使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerOptionsPostConfigure.#ctor(MCPP.Net.Core.McpToolsKeeper)">
+            <summary>
+            覆盖 <see cref="T:ModelContextProtocol.Server.McpServerOptions"/> 默认配置，使用 <see cref="T:MCPP.Net.Core.McpToolsKeeper"/> 管理 Tools，方便后续的增删操作
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpServerOptionsPostConfigure.PostConfigure(System.String,ModelContextProtocol.Server.McpServerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:MCPP.Net.Core.McpToolsKeeper">
+            <summary>
+            Tool 管理员，可以在运行时添加和删除 Tools
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.#ctor(Microsoft.Extensions.Logging.ILogger{MCPP.Net.Core.McpToolsKeeper})">
+            <summary>
+            Tool 管理员，可以在运行时添加和删除 Tools
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.SetTools(ModelContextProtocol.Protocol.Types.ToolsCapability)">
+            <summary>
+            使用原始配置初始化<see cref="T:MCPP.Net.Core.McpToolsKeeper"/>
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.Add(System.String,System.Collections.Generic.IEnumerable{ModelContextProtocol.Server.McpServerTool})">
+            <summary>
+            添加一个新的 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.Remove(System.String)">
+            <summary>
+            移除一个 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.ListToolsHandler(ModelContextProtocol.Server.RequestContext{ModelContextProtocol.Protocol.Types.ListToolsRequestParams},System.Threading.CancellationToken)">
+            <summary>
+            获取所有 Tool 集合
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.McpToolsKeeper.CallToolHandler(ModelContextProtocol.Server.RequestContext{ModelContextProtocol.Protocol.Types.CallToolRequestParams},System.Threading.CancellationToken)">
+            <summary>
+            调用指定的 Tool
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Core.PluginAssembly">
+            <summary>
+            程序集元数据信息，方便统一管理释放
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.PluginAssembly.#ctor(System.Reflection.Assembly,System.Runtime.Loader.AssemblyLoadContext)">
+            <summary>
+            程序集元数据信息，方便统一管理释放
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Core.PluginAssembly.SerializerOptions">
+            <summary>
+            绑定到程序集的 <see cref="T:System.Text.Json.JsonSerializerOptions"/>
+            </summary>
+            <remarks>
+            Microsoft.Extensions.Ai 内部通过 ConditionalWeakTable 缓存了 Tool 对应的 MethodInfo 信息，如果不释放将无法卸载程序集。
+            ConditionalWeakTable 的 Key 为 <see cref="T:System.Text.Json.JsonSerializerOptions"/> 对象，所以可以将整个程序集的所有 Tools 对应到一个 <see cref="T:System.Text.Json.JsonSerializerOptions"/> 上，在卸载程序集前删除对象引用即可<br/>
+            https://github.com/dotnet/extensions/blob/f1f17e642a685df7e87b805be1efe4729ff725e4/src/Libraries/Microsoft.Extensions.AI/Functions/AIFunctionFactory.cs#L219-L247
+            </remarks>
+        </member>
+        <member name="P:MCPP.Net.Core.PluginAssembly.Assembly">
+            <summary>
+            动态生成的程序集
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.PluginAssembly.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:MCPP.Net.Core.ToolAssemblyLoader">
+            <summary>
+            <see cref="T:MCPP.Net.Core.IToolAssemblyLoader"/> 的默认实现
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.#ctor(MCPP.Net.Core.McpToolsKeeper,Microsoft.Extensions.Logging.ILogger{MCPP.Net.Core.ToolAssemblyLoader})">
+            <summary>
+            <see cref="T:MCPP.Net.Core.IToolAssemblyLoader"/> 的默认实现
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.Load(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolAssemblyLoader.Unload(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="T:MCPP.Net.Core.ToolLoadedDetail">
+            <summary>
+            <see cref="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)"/> 的返回值，包含了加载的具体信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Core.ToolLoadedDetail.#ctor(System.Collections.Generic.List{System.String},System.Collections.Generic.List{MCPP.Net.Models.ImportedTool})">
+            <summary>
+            <see cref="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)"/> 的返回值，包含了加载的具体信息
+            </summary>
+        </member>
         <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
             <summary>
             Sets up endpoints for handling MCP HTTP Streaming transport.
@@ -37,6 +492,31 @@
             <param name="endpoints">The web application to attach MCP HTTP endpoints.</param>
             <param name="runSession">Provides an optional asynchronous callback for handling new MCP sessions.</param>
             <returns>Returns a builder for configuring additional endpoint conventions like authorization policies.</returns>
+        </member>
+        <member name="P:MCPP.Net.Models.ApiToolDto.Name">
+            <summary>
+            工具名称
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ApiToolDto.Desc">
+            <summary>
+            工具描述
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ApiToolDto.EndPoint">
+            <summary>
+            restful api 请求地址
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ApiToolDto.MethodType">
+            <summary>
+            请求方法类型 1: GET 2: POST
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.ApiToolDto.InputSchema">
+            <summary>
+            请求参数,描述
+            </summary>
         </member>
         <member name="T:MCPP.Net.Models.SwaggerImportRequest">
             <summary>
@@ -123,6 +603,446 @@
             源服务器基础URL
             </summary>
         </member>
+        <member name="M:MCPP.Net.Repositories.Base.CreateEntity.EntityService.CreateEntity(System.String,System.String)">
+            <summary>
+            生成实体类
+            </summary>
+            <param name="entityName"></param>
+            <param name="filePath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetList">
+            <summary>
+            获取所有list
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetListAsync">
+            <summary>
+            获取所有list-异步
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetList(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda查询
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetListAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda查询-异步
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Count(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda表达式获取数量
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.CountAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda表达式获取数量-异步
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel)">
+            <summary>
+            获取分页
+            </summary>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList``1(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel)">
+            <summary>
+            分页查询
+            </summary>
+            <typeparam name="P"></typeparam>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel)">
+            <summary>
+            获取分页-异步
+            </summary>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync``1(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel)">
+            <summary>
+            分页查询
+            </summary>
+            <typeparam name="P"></typeparam>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList``1(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <typeparam name="P"></typeparam>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync``1(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <typeparam name="P"></typeparam>
+            <param name="whereExpression"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList(System.Collections.Generic.List{SqlSugar.IConditionalModel},SqlSugar.PageModel)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="conditionalList"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync(System.Collections.Generic.List{SqlSugar.IConditionalModel},SqlSugar.PageModel)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="conditionalList"></param>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageList(System.Collections.Generic.List{SqlSugar.IConditionalModel},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="conditionalList"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetPageListAsync(System.Collections.Generic.List{SqlSugar.IConditionalModel},SqlSugar.PageModel,System.Linq.Expressions.Expression{System.Func{`0,System.Object}},SqlSugar.OrderByType)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="conditionalList"></param>
+            <param name="page"></param>
+            <param name="orderByExpression"></param>
+            <param name="orderByType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetById(System.Object)">
+            <summary>
+            根据id获取实体
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetByIdAsync(System.Object)">
+            <summary>
+            根据id获取实体-异步
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetSingle(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda获取单个对象 （注意，需要确保唯一，如果获取到2个会报错，这种场景需要使用GetFirst）
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetSingleAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda获取单个对象-异步  （注意，需要确保唯一，如果获取到2个会报错，这种场景需要使用GetFirst）
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetFirst(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda获取单个对象
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.GetFirstAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据lambda获取单个对象 --异步
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Insert(`0)">
+            <summary>
+            实体插入
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertAsync(`0)">
+            <summary>
+            实体插入-异步
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertRange(System.Collections.Generic.List{`0})">
+            <summary>
+            批量插入
+            </summary>
+            <param name="objs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertRangeAsync(System.Collections.Generic.List{`0})">
+            <summary>
+            批量插入-异步
+            </summary>
+            <param name="objs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertReturnIdentity(`0)">
+            <summary>
+            插入返回自增列
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertReturnIdentityAsync(`0)">
+            <summary>
+            插入返回自增列-异步
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertReturnBigIdentity(`0)">
+            <summary>
+            插入返回longid
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.InsertReturnBigIdentityAsync(`0)">
+            <summary>
+            插入返回longid-异步
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.DeleteByIds(System.Object[])">
+            <summary>
+            批量删除
+            </summary>
+            <param name="ids"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.DeleteByIdsAsync(System.Object[])">
+            <summary>
+            批量删除-异步
+            </summary>
+            <param name="ids"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Delete(System.Object)">
+            <summary>
+            根据主键删除
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.DeleteAsync(System.Object)">
+            <summary>
+            根据主键删除-异步
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Delete(`0)">
+            <summary>
+            根据实体删除
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.DeleteAsync(`0)">
+            <summary>
+            根据实体删除-异步
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Delete(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据表达式删除
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.DeleteAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            根据表达式删除-异步
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.Update(`0)">
+            <summary>
+            更新
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.UpdateAsync(`0)">
+            <summary>
+            更新-异步
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.UpdateRange(System.Collections.Generic.List{`0})">
+            <summary>
+            批量更新
+            </summary>
+            <param name="objs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.UpdateRangeAsync(System.Collections.Generic.List{`0})">
+            <summary>
+            批量更新-异步
+            </summary>
+            <param name="objs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.IsAny(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            是否包含元素
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.Repository`1.IsAnyAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            是否包含元素-异步
+            </summary>
+            <param name="whereExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Repositories.Base.SqlSugarHelper.SqlScope">
+            <summary>
+            DB链接
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Repositories.tool">
+            <summary>
+            API定义表
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.id">
+            <summary>
+            Desc:自增主键ID
+            Default:
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.appId">
+            <summary>
+            Desc:应用id
+            Default:
+            Nullable:True
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.name">
+            <summary>
+            Desc:tool名称
+            Default:
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.description">
+            <summary>
+            Desc:tool描述
+            Default:
+            Nullable:True
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.endpoint">
+            <summary>
+            Desc:API的endpoint地址
+            Default:
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.method_type">
+            <summary>
+            Desc:请求方式类型(如0:GET, 1:POST, 2:PUT, 3:DELETE等)
+            Default:
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.input_schema">
+            <summary>
+            Desc:输入参数的JSON Schema定义
+            Default:
+            Nullable:True
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.created_at">
+            <summary>
+            Desc:创建时间
+            Default:CURRENT_TIMESTAMP
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="P:MCPP.Net.Repositories.tool.updated_at">
+            <summary>
+            Desc:更新时间
+            Default:CURRENT_TIMESTAMP
+            Nullable:False
+            </summary>           
+        </member>
+        <member name="T:MCPP.Net.Services.IMcpServerMethodRegistry">
+            <summary>
+            MCP服务器方法注册接口
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+            <summary>
+            添加方法到MCP服务器
+            </summary>
+            <param name="methodInfo">方法信息</param>
+        </member>
         <member name="T:MCPP.Net.Services.ImportedToolsService">
             <summary>
             已导入工具服务
@@ -143,6 +1063,11 @@
             根据命名空间和类名加载已编译的工具
             </summary>
         </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.LoadSwaggerDllTools">
+            <summary>
+            从ImportedSwaggers目录加载DLL工具
+            </summary>
+        </member>
         <member name="M:MCPP.Net.Services.ImportedToolsService.SaveImportedTools">
             <summary>
             保存工具信息到文件
@@ -152,6 +1077,38 @@
             <summary>
             从文件加载工具信息
             </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.ImportedToolsService.RemoveImportedTool(System.String,System.String)">
+            <summary>
+            从导入工具列表中删除工具
+            </summary>
+            <param name="nameSpace">命名空间</param>
+            <param name="className">类名</param>
+            <returns>是否成功删除</returns>
+        </member>
+        <member name="M:MCPP.Net.Services.IToolAppService.NewTool(MCPP.Net.Models.ApiToolDto)">
+            <summary>
+            添加工具
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MCPP.Net.Services.McpServerMethodRegistry">
+            <summary>
+            MCP服务器方法注册实现
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.McpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+            <summary>
+            添加方法到MCP服务器
+            </summary>
+            <param name="methodInfo">方法信息</param>
+        </member>
+        <member name="M:MCPP.Net.Services.McpServerMethodRegistry.GetRegisteredMethods">
+            <summary>
+            获取已注册的所有方法
+            </summary>
+            <returns>已注册的方法列表</returns>
         </member>
         <member name="T:MCPP.Net.Services.SwaggerImportService">
             <summary>
@@ -171,64 +1128,6 @@
             </summary>
             <param name="swaggerUrlOrPath">Swagger URL或本地文件路径</param>
             <returns>Swagger JSON内容</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateDynamicToolType(Newtonsoft.Json.Linq.JObject,MCPP.Net.Models.SwaggerImportRequest,System.String)">
-            <summary>
-            生成动态工具类型
-            </summary>
-            <param name="swaggerDoc">Swagger文档对象</param>
-            <param name="request">导入请求</param>
-            <param name="baseUrl">API基础URL</param>
-            <returns>生成的动态类型</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.CreateDynamicMethod(System.Reflection.Emit.TypeBuilder,System.String,System.String,System.String,System.String,System.String,Newtonsoft.Json.Linq.JObject,System.String)">
-            <summary>
-            创建动态方法
-            </summary>
-            <param name="typeBuilder">TypeBuilder</param>
-            <param name="operationId">操作ID</param>
-            <param name="path">API路径</param>
-            <param name="httpMethod">HTTP方法</param>
-            <param name="summary">摘要</param>
-            <param name="description">描述</param>
-            <param name="operation">操作定义</param>
-            <param name="baseUrl">API基础URL</param>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.GenerateSchemaDescription(Newtonsoft.Json.Linq.JObject,System.Text.StringBuilder,System.Int32)">
-            <summary>
-            生成Schema的描述信息
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeMethodName(System.String)">
-            <summary>
-            规范化方法名
-            </summary>
-            <param name="operationId">操作ID</param>
-            <returns>规范化的方法名</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.NormalizeParameterName(System.String)">
-            <summary>
-            规范化参数名
-            </summary>
-            <param name="paramName">参数名</param>
-            <returns>规范化的参数名</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.RegisterToolMethods(System.Type)">
-            <summary>
-            注册工具方法到MCP服务
-            </summary>
-            <param name="toolType">工具类型</param>
-            <returns>已注册的方法名列表</returns>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.SaveSwaggerDefinition(MCPP.Net.Models.SwaggerImportRequest,System.String)">
-            <summary>
-            保存Swagger定义
-            </summary>
-        </member>
-        <member name="M:MCPP.Net.Services.SwaggerImportService.LoadSavedSwaggerDefinitions">
-            <summary>
-            加载已保存的Swagger定义
-            </summary>
         </member>
         <member name="M:MCPP.Net.Services.SwaggerImportService.GetImportedTools">
             <summary>
@@ -250,24 +1149,9 @@
             <param name="className">类名</param>
             <returns>是否删除成功</returns>
         </member>
-        <member name="T:MCPP.Net.Services.SwaggerStorageItem">
+        <member name="M:MCPP.Net.Services.SwaggerImportService.CleanupResources">
             <summary>
-            Swagger存储项
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.Request">
-            <summary>
-            导入请求
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.SwaggerJson">
-            <summary>
-            Swagger JSON内容
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Services.SwaggerStorageItem.ImportDate">
-            <summary>
-            导入日期
+            清理资源
             </summary>
         </member>
         <member name="T:MCPP.Net.SwaggerImportExtensions">
@@ -283,33 +1167,56 @@
             <param name="dynamicToolTypes">动态生成的工具类型列表</param>
             <returns>MCP服务器构建器</returns>
         </member>
-        <member name="T:ModelContextProtocol.Server.IMcpServerMethodRegistry">
+        <member name="T:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool">
             <summary>
-            MCP服务器方法注册接口
+            https://github.com/modelcontextprotocol/csharp-sdk/blob/4c537ef86bd8bb10980962a8f0bac001453c5cd9/src/ModelContextProtocol/Server/AIFunctionMcpServerTool.cs
             </summary>
         </member>
-        <member name="M:ModelContextProtocol.Server.IMcpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool.Create(System.Reflection.MethodInfo,System.Text.Json.JsonSerializerOptions)">
             <summary>
-            添加方法到MCP服务器
+            
             </summary>
-            <param name="methodInfo">方法信息</param>
+            <remarks>
+            Microsoft.Extensions.AI 内部会使用 JsonSerializerOptions，
+            </remarks>
         </member>
-        <member name="T:ModelContextProtocol.Server.McpServerMethodRegistry">
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIFunctionMcpServerTool.Create(System.Reflection.MethodInfo,System.Object,ModelContextProtocol.Server.McpServerToolCreateOptions,System.Text.Json.JsonSerializerOptions)">
             <summary>
-            MCP服务器方法注册实现
+            
+            </summary>
+            <param name="method"></param>
+            <param name="target"></param>
+            <param name="options"></param>
+            <param name="serializerOptions"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MCPP.Net.UnsafeImports.UnsafeAIJsonUtilities">
+            <summary>
+            https://github.com/dotnet/extensions/blob/f1f17e642a685df7e87b805be1efe4729ff725e4/src/Libraries/Microsoft.Extensions.AI.Abstractions/Utilities/AIJsonUtilities.Defaults.cs#L43-L73
             </summary>
         </member>
-        <member name="M:ModelContextProtocol.Server.McpServerMethodRegistry.AddMethod(System.Reflection.MethodInfo)">
+        <member name="M:MCPP.Net.UnsafeImports.UnsafeAIJsonUtilities.CreateDefaultOptions">
             <summary>
-            添加方法到MCP服务器
+            调用私有方法 Microsoft.Extensions.AI.AIJsonUtilities.CreateDefaultOptions
             </summary>
-            <param name="methodInfo">方法信息</param>
+            <returns></returns>
         </member>
-        <member name="M:ModelContextProtocol.Server.McpServerMethodRegistry.GetRegisteredMethods">
+        <member name="T:ISS.IPSA.AIMaaS.Controllers.EntityController">
             <summary>
-            获取已注册的所有方法
+            生成实体
             </summary>
-            <returns>已注册的方法列表</returns>
+        </member>
+        <member name="M:ISS.IPSA.AIMaaS.Controllers.EntityController.#ctor(MCPP.Net.Repositories.Base.CreateEntity.IEntityService,Microsoft.AspNetCore.Hosting.IHostingEnvironment)">
+            <summary>
+            生成实体
+            </summary>
+        </member>
+        <member name="M:ISS.IPSA.AIMaaS.Controllers.EntityController.CreateEntity(System.String)">
+            <summary>
+            生成实体类
+            </summary>
+            <param name="entityName">表名,生成目录默认在根目录</param>
+            <returns></returns>
         </member>
     </members>
 </doc>

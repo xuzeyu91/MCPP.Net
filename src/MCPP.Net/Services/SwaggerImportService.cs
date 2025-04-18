@@ -1,13 +1,8 @@
+using MCPP.Net.Core;
 using MCPP.Net.Models;
-using ModelContextProtocol.Server;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.ComponentModel;
-using System.Net.Http;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Runtime.Loader;
 
 namespace MCPP.Net.Services
 {
@@ -17,32 +12,36 @@ namespace MCPP.Net.Services
     public class SwaggerImportService
     {
         private readonly ILogger<SwaggerImportService> _logger;
-        private readonly IMcpServerMethodRegistry _methodRegistry;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IWebHostEnvironment _hostEnvironment;
-        private static readonly Dictionary<string, ImportedTool> _importedTools = new Dictionary<string, ImportedTool>();
+        private readonly ImportedToolsService _importedToolsService;
+        private readonly IAssemblyBuilder _assemblyBuilder;
+        private readonly IToolAssemblyLoader _toolAssemblyLoader;
         private readonly string _storageDirectory;
+        private readonly string _assemblyDirectory;
 
         public SwaggerImportService(
             ILogger<SwaggerImportService> logger,
-            IMcpServerMethodRegistry methodRegistry,
             IHttpClientFactory httpClientFactory,
-            IWebHostEnvironment hostEnvironment)
+            IWebHostEnvironment hostEnvironment,
+            ImportedToolsService importedToolsService,
+            IAssemblyBuilder assemblyBuilder,
+            IToolAssemblyLoader toolAssemblyLoader)
         {
             _logger = logger;
-            _methodRegistry = methodRegistry;
             _httpClientFactory = httpClientFactory;
             _hostEnvironment = hostEnvironment;
+            _importedToolsService = importedToolsService;
+            _assemblyBuilder = assemblyBuilder;
+            _toolAssemblyLoader = toolAssemblyLoader;
             _storageDirectory = Path.Combine(_hostEnvironment.ContentRootPath, "ImportedSwaggers");
-            
+            _assemblyDirectory = _storageDirectory; // 使用相同目录存储程序集
+
             // 确保存储目录存在
             if (!Directory.Exists(_storageDirectory))
             {
                 Directory.CreateDirectory(_storageDirectory);
             }
-            
-            // 加载已保存的Swagger定义
-            LoadSavedSwaggerDefinitions();
         }
 
         /// <summary>
@@ -63,7 +62,7 @@ namespace MCPP.Net.Services
 
             // 2. 解析Swagger JSON
             JObject swaggerDoc = JObject.Parse(swaggerJson);
-            
+
             // 获取服务器基础URL
             string baseUrl = "";
             // 优先使用用户提供的源服务器URL
@@ -81,44 +80,26 @@ namespace MCPP.Net.Services
                     _logger.LogInformation("从Swagger文档中获取服务器URL: {BaseUrl}", baseUrl);
                 }
             }
-            
-            // 3. 动态生成API工具类
-            Type toolType = GenerateDynamicToolType(swaggerDoc, request, baseUrl);
-            
-            // 4. 注册工具方法到MCP服务
-            List<string> registeredMethods = RegisterToolMethods(toolType);
 
-            // 5. 记录导入工具信息
-            var importedTool = new ImportedTool
+            _toolAssemblyLoader.Unload($"{request.NameSpace}.{request.ClassName}");
+
+            var assemblyPath = _assemblyBuilder.Build(swaggerDoc, request, baseUrl);
+
+            var loadedDetail = _toolAssemblyLoader.Load(assemblyPath);
+
+            foreach (var importedTool in loadedDetail.ImportedTools)
             {
-                NameSpace = request.NameSpace,
-                ClassName = request.ClassName,
-                ApiCount = registeredMethods.Count,
-                ImportDate = DateTime.Now,
-                SwaggerSource = request.SwaggerUrl,
-                SourceBaseUrl = request.SourceBaseUrl
-            };
-            
-            string key = $"{request.NameSpace}.{request.ClassName}";
-            if (_importedTools.ContainsKey(key))
-            {
-                _importedTools[key] = importedTool;
+                // 将工具信息保存到ImportedToolsService，确保程序重启后能自动加载
+                _importedToolsService.AddImportedTool(importedTool);
             }
-            else
-            {
-                _importedTools.Add(key, importedTool);
-            }
-            
-            // 保存Swagger定义
-            SaveSwaggerDefinition(request, swaggerJson);
 
             // 6. 返回导入结果
             return new SwaggerImportResult
             {
                 Success = true,
-                ApiCount = registeredMethods.Count,
+                ApiCount = loadedDetail.RegisteredMethods.Count,
                 ToolClassName = request.ClassName,
-                ImportedApis = registeredMethods
+                ImportedApis = loadedDetail.RegisteredMethods
             };
         }
 
@@ -130,7 +111,7 @@ namespace MCPP.Net.Services
         private async Task<string> GetSwaggerJsonAsync(string swaggerUrlOrPath)
         {
             // 判断是否为URL
-            if (Uri.TryCreate(swaggerUrlOrPath, UriKind.Absolute, out Uri? uri) && 
+            if (Uri.TryCreate(swaggerUrlOrPath, UriKind.Absolute, out Uri? uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
                 // 通过HTTP请求获取Swagger文档
@@ -151,522 +132,14 @@ namespace MCPP.Net.Services
         }
 
         /// <summary>
-        /// 生成动态工具类型
-        /// </summary>
-        /// <param name="swaggerDoc">Swagger文档对象</param>
-        /// <param name="request">导入请求</param>
-        /// <param name="baseUrl">API基础URL</param>
-        /// <returns>生成的动态类型</returns>
-        private Type GenerateDynamicToolType(JObject swaggerDoc, SwaggerImportRequest request, string baseUrl)
-        {
-            // 创建AssemblyBuilder和ModuleBuilder
-            AssemblyName assemblyName = new AssemblyName($"{request.NameSpace}.{request.ClassName}");
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
-
-            // 创建TypeBuilder
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(
-                $"{request.NameSpace}.{request.ClassName}", 
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract | TypeAttributes.Sealed);
-
-            // 添加McpServerToolType特性
-            Type mcpServerToolTypeAttrType = typeof(McpServerToolTypeAttribute);
-            ConstructorInfo mcpServerToolTypeCtorInfo = mcpServerToolTypeAttrType.GetConstructor(Type.EmptyTypes)!;
-            CustomAttributeBuilder mcpServerToolTypeAttrBuilder = new CustomAttributeBuilder(mcpServerToolTypeCtorInfo, Array.Empty<object>());
-            typeBuilder.SetCustomAttribute(mcpServerToolTypeAttrBuilder);
-
-            // 解析Swagger Paths并创建方法
-            JObject paths = (JObject)swaggerDoc["paths"]!;
-            int methodCount = 0;
-
-            foreach (var pathPair in paths)
-            {
-                string path = pathPair.Key;
-                JObject operations = (JObject)pathPair.Value!;
-
-                foreach (var operationPair in operations)
-                {
-                    string httpMethod = operationPair.Key.ToUpper();
-                    JObject operation = (JObject)operationPair.Value!;
-
-                    // 使用namespace + class + path生成operationId
-                    string operationId = $"{request.NameSpace}_{request.ClassName}_{path.Replace("/", "_").Trim('_')}";
-                    string summary = operation["summary"]?.ToString() ?? $"HTTP {httpMethod} {path}";
-                    string description = operation["description"]?.ToString() ?? summary;
-
-                    // 创建方法
-                    CreateDynamicMethod(typeBuilder, operationId, path, httpMethod, summary, description, operation, baseUrl);
-                }
-            }
-
-            // 生成类型
-            Type dynamicType = typeBuilder.CreateType()!;
-            _logger.LogInformation("已创建动态工具类型: {TypeName}", dynamicType.FullName);
-            return dynamicType;
-        }
-
-        /// <summary>
-        /// 创建动态方法
-        /// </summary>
-        /// <param name="typeBuilder">TypeBuilder</param>
-        /// <param name="operationId">操作ID</param>
-        /// <param name="path">API路径</param>
-        /// <param name="httpMethod">HTTP方法</param>
-        /// <param name="summary">摘要</param>
-        /// <param name="description">描述</param>
-        /// <param name="operation">操作定义</param>
-        /// <param name="baseUrl">API基础URL</param>
-        private void CreateDynamicMethod(
-            TypeBuilder typeBuilder, 
-            string operationId, 
-            string path, 
-            string httpMethod, 
-            string summary, 
-            string description, 
-            JObject operation,
-            string baseUrl)
-        {
-            // 规范化方法名
-            string methodName = NormalizeMethodName(operationId);
-            
-            // 获取参数列表
-            JArray? parameters = (JArray?)operation["parameters"];
-            JObject? requestBody = (JObject?)operation["requestBody"];
-            
-            List<Type> parameterTypes = new List<Type>();
-            List<string> parameterNames = new List<string>();
-            List<string> parameterDescriptions = new List<string>();
-            List<string> pathParams = new List<string>();
-            List<string> queryParams = new List<string>();
-            
-            // 处理Path和Query参数
-            if (parameters != null)
-            {
-                foreach (JObject param in parameters)
-                {
-                    string paramName = param["name"]?.ToString() ?? "";
-                    string paramIn = param["in"]?.ToString() ?? "";
-                    
-                    if (paramIn == "path" || paramIn == "query")
-                    {
-                        string normalizedName = NormalizeParameterName(paramName);
-                        parameterTypes.Add(typeof(string));
-                        parameterNames.Add(normalizedName);
-                        parameterDescriptions.Add(param["description"]?.ToString() ?? $"参数 {paramName}");
-                        
-                        if (paramIn == "path")
-                        {
-                            pathParams.Add(paramName);
-                        }
-                        else if (paramIn == "query")
-                        {
-                            queryParams.Add(paramName);
-                        }
-                    }
-                }
-            }
-            
-            // 处理请求体
-            bool hasRequestBody = false;
-            string requestBodySchema = "{}";
-            string requestBodyDescription = "请求体 (JSON格式)";
-            
-            if (requestBody != null)
-            {
-                hasRequestBody = true;
-                parameterTypes.Add(typeof(string));
-                parameterNames.Add("requestBody");
-                
-                // 尝试提取请求体Schema和描述
-                if (requestBody["content"] is JObject content && 
-                    content["application/json"] is JObject jsonContent &&
-                    jsonContent["schema"] is JObject schema)
-                {
-                    requestBodySchema = schema.ToString(Formatting.Indented);
-                    
-                    // 生成详细的请求体描述
-                    var schemaDescription = new StringBuilder();
-                    schemaDescription.AppendLine("请求体结构:");
-                    GenerateSchemaDescription(schema, schemaDescription, 1);
-                    requestBodyDescription = schemaDescription.ToString();
-                }
-                
-                parameterDescriptions.Add(requestBodyDescription);
-            }
-            
-            // 定义方法
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
-                methodName,
-                MethodAttributes.Public | MethodAttributes.Static,
-                typeof(string),
-                parameterTypes.ToArray());
-            
-            // 设置参数名称
-            for (int i = 0; i < parameterNames.Count; i++)
-            {
-                ParameterBuilder paramBuilder = methodBuilder.DefineParameter(i + 1, ParameterAttributes.None, parameterNames[i]);
-                
-                // 为参数添加Description特性
-                Type paramDescriptionAttrType = typeof(DescriptionAttribute);
-                ConstructorInfo paramDescriptionCtorInfo = paramDescriptionAttrType.GetConstructor(new Type[] { typeof(string) })!;
-                CustomAttributeBuilder paramDescriptionAttrBuilder = new CustomAttributeBuilder(
-                    paramDescriptionCtorInfo, 
-                    new object[] { parameterDescriptions[i] });
-                paramBuilder.SetCustomAttribute(paramDescriptionAttrBuilder);
-            }
-
-            // 添加McpServerTool特性
-            Type mcpServerToolAttrType = typeof(McpServerToolAttribute);
-            ConstructorInfo mcpServerToolCtorInfo = mcpServerToolAttrType.GetConstructor(Type.EmptyTypes)!;
-            
-            CustomAttributeBuilder mcpServerToolAttrBuilder = new CustomAttributeBuilder(
-                mcpServerToolCtorInfo, 
-                Array.Empty<object>(),
-                new PropertyInfo[] { mcpServerToolAttrType.GetProperty("Name")! },
-                new object[] { methodName.ToLower() });
-            methodBuilder.SetCustomAttribute(mcpServerToolAttrBuilder);
-
-            // 添加Description特性
-            Type descriptionAttrType = typeof(DescriptionAttribute);
-            ConstructorInfo descriptionCtorInfo = descriptionAttrType.GetConstructor(new Type[] { typeof(string) })!;
-            CustomAttributeBuilder descriptionAttrBuilder = new CustomAttributeBuilder(descriptionCtorInfo, new object[] { description });
-            methodBuilder.SetCustomAttribute(descriptionAttrBuilder);
-
-            // 生成示例HTTP请求代码
-            string fullPath = path;
-            foreach (var pathParam in pathParams)
-            {
-                fullPath = fullPath.Replace($"{{{pathParam}}}", $"\" + {NormalizeParameterName(pathParam)} + \"");
-            }
-            
-            string queryString = "";
-            if (queryParams.Count > 0)
-            {
-                queryString = "?";
-                for (int i = 0; i < queryParams.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        queryString += "&";
-                    }
-                    string normalizedName = NormalizeParameterName(queryParams[i]);
-                    queryString += $"{queryParams[i]}=\" + {normalizedName} + \"";
-                }
-            }
-            
-            string fullUrl = baseUrl + fullPath + queryString;
-            
-            // 生成方法实现
-            ILGenerator il = methodBuilder.GetILGenerator();
-            
-            // 创建StringBuilder
-            LocalBuilder stringBuilder = il.DeclareLocal(typeof(StringBuilder));
-            il.Emit(OpCodes.Newobj, typeof(StringBuilder).GetConstructor(Type.EmptyTypes)!);
-            il.Emit(OpCodes.Stloc, stringBuilder);
-            
-            // 添加API信息
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, $"API: {httpMethod} {path}\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加API请求示例
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, $"\n示例请求:\n```\n{httpMethod} {fullUrl}\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加请求头
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, "Content-Type: application/json\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加请求体示例
-            if (hasRequestBody)
-            {
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, $"\n{requestBodySchema}\n");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-            }
-            
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Ldstr, "```\n\n参数值:\n");
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-            il.Emit(OpCodes.Pop);
-            
-            // 添加参数信息
-            for (int i = 0; i < parameterNames.Count; i++)
-            {
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, $"- {parameterNames[i]}: ");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-                
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldarg, i + 1);
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-                
-                il.Emit(OpCodes.Ldloc, stringBuilder);
-                il.Emit(OpCodes.Ldstr, "\n");
-                il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("Append", new[] { typeof(string) })!);
-                il.Emit(OpCodes.Pop);
-            }
-            
-            // 返回结果
-            il.Emit(OpCodes.Ldloc, stringBuilder);
-            il.Emit(OpCodes.Callvirt, typeof(StringBuilder).GetMethod("ToString", Type.EmptyTypes)!);
-            il.Emit(OpCodes.Ret);
-        }
-
-        /// <summary>
-        /// 生成Schema的描述信息
-        /// </summary>
-        private void GenerateSchemaDescription(JObject schema, StringBuilder description, int indentLevel)
-        {
-            string indent = new string(' ', indentLevel * 2);
-            
-            if (schema["type"]?.ToString() == "object")
-            {
-                if (schema["properties"] is JObject properties)
-                {
-                    foreach (var prop in properties)
-                    {
-                        string propName = prop.Key;
-                        JObject propSchema = (JObject)prop.Value!;
-                        
-                        // 添加属性名和类型
-                        description.Append($"{indent}- {propName}: ");
-                        
-                        if (propSchema["type"] != null)
-                        {
-                            description.Append(propSchema["type"]!.ToString());
-                        }
-                        
-                        // 添加描述
-                        if (propSchema["description"] != null)
-                        {
-                            description.Append($" - {propSchema["description"]}");
-                        }
-                        
-                        description.AppendLine();
-                        
-                        // 递归处理嵌套对象
-                        if (propSchema["type"]?.ToString() == "object" && propSchema["properties"] != null)
-                        {
-                            GenerateSchemaDescription(propSchema, description, indentLevel + 1);
-                        }
-                        // 处理数组类型
-                        else if (propSchema["type"]?.ToString() == "array" && propSchema["items"] != null)
-                        {
-                            description.Append($"{indent}  - 数组元素类型: ");
-                            if (propSchema["items"]!["type"] != null)
-                            {
-                                description.AppendLine(propSchema["items"]!["type"]!.ToString());
-                            }
-                            
-                            if (propSchema["items"]!["type"]?.ToString() == "object" && 
-                                propSchema["items"]!["properties"] != null)
-                            {
-                                GenerateSchemaDescription((JObject)propSchema["items"]!, description, indentLevel + 2);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 规范化方法名
-        /// </summary>
-        /// <param name="operationId">操作ID</param>
-        /// <returns>规范化的方法名</returns>
-        private string NormalizeMethodName(string operationId)
-        {
-            // 移除非法字符，保留字母、数字和下划线
-            string normalized = Regex.Replace(operationId, @"[^a-zA-Z0-9_]", "");
-            
-            // 确保以字母开头
-            if (normalized.Length == 0 || !char.IsLetter(normalized[0]))
-            {
-                normalized = "Api" + normalized;
-            }
-            
-            return normalized;
-        }
-
-        /// <summary>
-        /// 规范化参数名
-        /// </summary>
-        /// <param name="paramName">参数名</param>
-        /// <returns>规范化的参数名</returns>
-        private string NormalizeParameterName(string paramName)
-        {
-            // 移除非法字符，保留字母、数字和下划线
-            string normalized = Regex.Replace(paramName, @"[^a-zA-Z0-9_]", "");
-            
-            // 确保以字母开头
-            if (normalized.Length == 0 || !char.IsLetter(normalized[0]))
-            {
-                normalized = "param" + normalized;
-            }
-            
-            // 转换为小驼峰命名
-            return char.ToLowerInvariant(normalized[0]) + normalized.Substring(1);
-        }
-
-        /// <summary>
-        /// 注册工具方法到MCP服务
-        /// </summary>
-        /// <param name="toolType">工具类型</param>
-        /// <returns>已注册的方法名列表</returns>
-        private List<string> RegisterToolMethods(Type toolType)
-        {
-            List<string> registeredMethods = new List<string>();
-            
-            // 获取所有标记了[McpServerTool]特性的静态方法
-            var methods = toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
-            
-            foreach (var method in methods)
-            {
-                // 注册到MCP服务
-                _methodRegistry.AddMethod(method);
-                registeredMethods.Add(method.Name);
-            }
-            
-            _logger.LogInformation("已注册 {Count} 个方法到MCP服务", registeredMethods.Count);
-            return registeredMethods;
-        }
-
-        /// <summary>
-        /// 保存Swagger定义
-        /// </summary>
-        private void SaveSwaggerDefinition(SwaggerImportRequest request, string swaggerJson)
-        {
-            try
-            {
-                string fileName = $"{request.NameSpace}.{request.ClassName}.json";
-                string filePath = Path.Combine(_storageDirectory, fileName);
-                
-                // 创建包含swagger定义和请求信息的完整存储对象
-                var storageObject = new SwaggerStorageItem
-                {
-                    Request = request,
-                    SwaggerJson = swaggerJson,
-                    ImportDate = DateTime.Now
-                };
-                
-                string storageJson = JsonConvert.SerializeObject(storageObject, Formatting.Indented);
-                File.WriteAllText(filePath, storageJson);
-                
-                _logger.LogInformation("已保存Swagger定义: {FilePath}", filePath);
-                
-                // TODO: 实现将动态生成的类型编译为DLL的功能
-                // 这需要使用CodeDOM或Roslyn编译器来实现
-                // 可以在这里将Swagger对象编译为DLL并保存到ImportedTools目录
-                // 然后通过ImportedToolsService来加载它
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "保存Swagger定义失败: {Message}", ex.Message);
-            }
-        }
-        
-        /// <summary>
-        /// 加载已保存的Swagger定义
-        /// </summary>
-        private void LoadSavedSwaggerDefinitions()
-        {
-            try
-            {
-                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
-                _logger.LogInformation("找到 {Count} 个已保存的Swagger定义", swaggerFiles.Length);
-                
-                foreach (var file in swaggerFiles)
-                {
-                    try
-                    {
-                        string json = File.ReadAllText(file);
-                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
-                        
-                        if (storageItem != null)
-                        {
-                            _logger.LogInformation("加载Swagger定义: {NameSpace}.{ClassName}", 
-                                storageItem.Request.NameSpace, storageItem.Request.ClassName);
-                            
-                            // 解析JSON并注册工具
-                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
-                            
-                            // 获取服务器基础URL
-                            string baseUrl = "";
-                            // 优先使用用户提供的源服务器URL
-                            if (!string.IsNullOrEmpty(storageItem.Request.SourceBaseUrl))
-                            {
-                                baseUrl = storageItem.Request.SourceBaseUrl;
-                                _logger.LogInformation("使用用户提供的源服务器URL: {BaseUrl}", baseUrl);
-                            }
-                            else if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
-                            {
-                                JArray servers = (JArray)swaggerDoc["servers"]!;
-                                if (servers.Count > 0 && servers[0]["url"] != null)
-                                {
-                                    baseUrl = servers[0]["url"]!.ToString();
-                                    _logger.LogInformation("从Swagger文档中获取服务器URL: {BaseUrl}", baseUrl);
-                                }
-                            }
-                            
-                            // 动态生成API工具类
-                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
-                            
-                            // 注册工具方法到MCP服务
-                            List<string> registeredMethods = RegisterToolMethods(toolType);
-                            
-                            // 记录导入工具信息
-                            var importedTool = new ImportedTool
-                            {
-                                NameSpace = storageItem.Request.NameSpace,
-                                ClassName = storageItem.Request.ClassName,
-                                ApiCount = registeredMethods.Count,
-                                ImportDate = storageItem.ImportDate,
-                                SwaggerSource = storageItem.Request.SwaggerUrl,
-                                SourceBaseUrl = storageItem.Request.SourceBaseUrl
-                            };
-                            
-                            string key = $"{storageItem.Request.NameSpace}.{storageItem.Request.ClassName}";
-                            if (_importedTools.ContainsKey(key))
-                            {
-                                _importedTools[key] = importedTool;
-                            }
-                            else
-                            {
-                                _importedTools.Add(key, importedTool);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "加载Swagger定义失败: {File}, {Message}", file, ex.Message);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "加载Swagger定义失败: {Message}", ex.Message);
-            }
-        }
-
-        /// <summary>
         /// 获取所有已导入的工具
         /// </summary>
         /// <returns>已导入的工具列表</returns>
         public IReadOnlyList<ImportedTool> GetImportedTools()
         {
-            return _importedTools.Values.ToList();
+            return _importedToolsService.GetImportedTools();
         }
-        
+
         /// <summary>
         /// 获取所有已加载的动态工具类型
         /// </summary>
@@ -674,36 +147,41 @@ namespace MCPP.Net.Services
         public List<Type> GetDynamicToolTypes()
         {
             List<Type> toolTypes = new List<Type>();
-            
+
             try
             {
-                var swaggerFiles = Directory.GetFiles(_storageDirectory, "*.json");
-                foreach (var file in swaggerFiles)
+                // 只搜索DLL文件
+                var assemblyFiles = Directory.GetFiles(_assemblyDirectory, "*.dll");
+                foreach (var file in assemblyFiles)
                 {
                     try
                     {
-                        string json = File.ReadAllText(file);
-                        var storageItem = JsonConvert.DeserializeObject<SwaggerStorageItem>(json);
+                        string fileName = Path.GetFileNameWithoutExtension(file);
+                        // 检查是否以命名空间.类名开头(然后是下划线和时间戳)
+                        int underscoreIndex = fileName.IndexOf('_');
+                        if (underscoreIndex == -1) continue; // 跳过不符合命名规则的DLL
                         
-                        if (storageItem != null)
+                        string fullName = fileName.Substring(0, underscoreIndex);
+                        int lastDotIndex = fullName.LastIndexOf('.');
+                        if (lastDotIndex == -1) continue;
+
+                        string nameSpace = fullName.Substring(0, lastDotIndex);
+                        string className = fullName.Substring(lastDotIndex + 1);
+
+                        // 加载程序集
+                        try
                         {
-                            // 解析JSON并创建工具类型
-                            JObject swaggerDoc = JObject.Parse(storageItem.SwaggerJson);
-                            
-                            // 获取服务器基础URL
-                            string baseUrl = "";
-                            if (swaggerDoc["servers"] != null && swaggerDoc["servers"]!.Type == JTokenType.Array)
+                            Assembly assembly = Assembly.LoadFrom(file);
+                            Type? toolType = assembly.GetType($"{nameSpace}.{className}");
+
+                            if (toolType != null)
                             {
-                                JArray servers = (JArray)swaggerDoc["servers"]!;
-                                if (servers.Count > 0 && servers[0]["url"] != null)
-                                {
-                                    baseUrl = servers[0]["url"]!.ToString();
-                                }
+                                toolTypes.Add(toolType);
                             }
-                            
-                            // 创建工具类型
-                            Type toolType = GenerateDynamicToolType(swaggerDoc, storageItem.Request, baseUrl);
-                            toolTypes.Add(toolType);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "加载已有程序集失败: {Path}", file);
                         }
                     }
                     catch (Exception ex)
@@ -716,10 +194,10 @@ namespace MCPP.Net.Services
             {
                 _logger.LogError(ex, "获取动态工具类型失败: {Message}", ex.Message);
             }
-            
+
             return toolTypes;
         }
-        
+
         /// <summary>
         /// 删除已导入的工具
         /// </summary>
@@ -729,27 +207,26 @@ namespace MCPP.Net.Services
         public bool DeleteImportedTool(string nameSpace, string className)
         {
             string key = $"{nameSpace}.{className}";
-            
+
             // 检查工具是否存在
-            if (!_importedTools.ContainsKey(key))
+            if (!_importedToolsService.GetImportedTools().Any(t => t.NameSpace == nameSpace && t.ClassName == className))
             {
                 _logger.LogWarning("尝试删除不存在的工具: {Key}", key);
                 return false;
             }
-            
+
             try
             {
-                // 删除存储的JSON文件
-                string filePath = Path.Combine(_storageDirectory, $"{key}.json");
+                var filePath = Path.Combine(_assemblyDirectory, $"{key}.dll");
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
-                    _logger.LogInformation("已删除工具定义文件: {FilePath}", filePath);
+                    _logger.LogInformation("已删除工具程序集文件: {FilePath}", filePath);
                 }
-                
-                // 从字典中移除记录
-                _importedTools.Remove(key);
-                
+
+                // 从ImportedToolsService中移除工具信息
+                _importedToolsService.RemoveImportedTool(nameSpace, className);
+
                 _logger.LogInformation("已成功删除工具: {Key}", key);
                 return true;
             }
@@ -759,26 +236,20 @@ namespace MCPP.Net.Services
                 throw;
             }
         }
-    }
-    
-    /// <summary>
-    /// Swagger存储项
-    /// </summary>
-    public class SwaggerStorageItem
-    {
+
         /// <summary>
-        /// 导入请求
+        /// 清理资源
         /// </summary>
-        public SwaggerImportRequest Request { get; set; } = new SwaggerImportRequest();
-        
-        /// <summary>
-        /// Swagger JSON内容
-        /// </summary>
-        public string SwaggerJson { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// 导入日期
-        /// </summary>
-        public DateTime ImportDate { get; set; }
+        public void CleanupResources()
+        {
+            // 清理已加载的程序集   
+            foreach (var context in AssemblyLoadContext.All)
+            {
+                if (context != AssemblyLoadContext.Default)
+                {
+                    context.Unload();
+                }
+            }
+        }
     }
 }

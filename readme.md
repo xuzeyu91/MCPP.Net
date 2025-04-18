@@ -2,6 +2,8 @@
 
 MCPP.Net是一个基于.NET 8的Model Context Protocol (MCP)服务器实现，支持将Swagger API动态转换为MCP工具，使AI工具能够通过MCP协议调用这些API。
 
+![图片介绍](https://github.com/user-attachments/assets/1950471f-fd54-4bfc-ad60-fa3f9ea334e6)
+
 ## 项目简介
 
 MCPP.Net允许你将任意OpenAPI/Swagger定义的RESTful API服务动态转换为符合Model Context Protocol规范的工具，实现AI模型与外部服务的无缝集成。项目基于.NET 8构建，提供简单易用的API接口和Swagger UI。

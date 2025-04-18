@@ -1,10 +1,18 @@
+using System.Configuration;
+using System.Runtime.CompilerServices;
 using MCPP.Net;
+using MCPP.Net.Common.DependencyInjection;
+using MCPP.Net.Common.Options;
+using MCPP.Net.Core;
 using MCPP.Net.Services;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 获取 IConfiguration
+var configuration = builder.Configuration;
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -16,37 +24,37 @@ builder.Services.AddSwaggerGen();
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
 
-// 注册Swagger导入服务
+// 注册服务
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<SwaggerImportService>();
 builder.Services.AddSingleton<ImportedToolsService>();
+builder.Services.AddSingleton<SwaggerImportService>();
+builder.Services.AddSingleton<IToolAssemblyLoader, ToolAssemblyLoader>();
+builder.Services.AddSingleton<IAssemblyBuilder, CecilAssemblyBuilder>();
+builder.Services.AddScoped<IToolAppService, ToolAppService>();
 
-// 获取服务提供程序
-using var serviceProvider = builder.Services.BuildServiceProvider();
+InitConfig(builder.Services);
 
-// 先注册MCP服务
+//反射根据特性依赖注入
+builder.Services.AddServicesFromAssemblies("MCPP.Net");
+
+// 构建MCP服务
 var mcpBuilder = builder.Services.AddMcpServer();
 
-// 提前初始化ImportedToolsService，加载已编译的工具
-var importedToolsService = serviceProvider.GetRequiredService<ImportedToolsService>();
-Console.WriteLine($"已初始化ImportedToolsService，自动加载已编译的工具");
-
-// 提前初始化SwaggerImportService，让它生成动态类型
-var swaggerImportService = serviceProvider.GetRequiredService<SwaggerImportService>();
-Console.WriteLine($"已初始化SwaggerImportService");
-
-// 获取所有Swagger动态生成的工具类型
-var dynamicToolTypes = swaggerImportService.GetDynamicToolTypes();
-Console.WriteLine($"找到 {dynamicToolTypes.Count} 个Swagger动态工具类型");
-
-// 添加动态生成的Swagger工具类型
-mcpBuilder.WithSwaggerTools(dynamicToolTypes);
-Console.WriteLine($"已注册Swagger动态工具类型");
-
-// 最后注册程序集中的工具
+// 注册程序集中的工具 - 必须在Build()之前完成
 mcpBuilder.WithToolsFromAssembly();
 
+mcpBuilder.UseToolsKeeper();
+
+mcpBuilder.WithDBTools(builder.Services.BuildServiceProvider());
+
+// 构建应用
 var app = builder.Build();
+
+// 初始化ImportedToolsService，它会自动加载所有工具
+var importedToolsService = app.Services.GetRequiredService<ImportedToolsService>();
+Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
+
+
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -59,5 +67,18 @@ app.UseSwaggerUI(c =>
 app.UseAuthorization();
 app.MapControllers();
 app.MapMcp();
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "import.html" }
+});
+
 app.UseStaticFiles();
-app.Run(); 
+app.Run();
+
+/// <summary>
+/// 注入配置文件
+/// </summary>
+void InitConfig(IServiceCollection services)
+{
+    configuration.GetSection("ConnectionStrings").Get<ConnectionOptions>();
+}

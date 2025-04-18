@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace ModelContextProtocol.Server
+namespace MCPP.Net.Services
 {
     /// <summary>
     /// MCP服务器方法注册接口
@@ -12,5 +12,7 @@ namespace ModelContextProtocol.Server
         /// </summary>
         /// <param name="methodInfo">方法信息</param>
         void AddMethod(MethodInfo methodInfo);
+
+        void Clear();
     }
 } 

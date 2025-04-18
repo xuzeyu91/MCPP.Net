@@ -22,11 +22,6 @@ namespace MCPP.Net.Controllers
             _importService = importService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Test()
-        {
-            return Ok("hello world");
-        }
         /// <summary>
         /// 导入Swagger API并动态注册为MCP工具
         /// </summary>
@@ -40,7 +35,7 @@ namespace MCPP.Net.Controllers
                 _logger.LogInformation("开始导入Swagger API: {Url}, 源服务器URL: {SourceUrl}", 
                     request.SwaggerUrl, 
                     string.IsNullOrEmpty(request.SourceBaseUrl) ? "(未提供)" : request.SourceBaseUrl);
-                
+               
                 var result = await _importService.ImportSwaggerAsync(request);
                 
                 return Ok(result);
