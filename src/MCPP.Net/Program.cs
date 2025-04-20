@@ -1,16 +1,10 @@
-using System.Configuration;
-using System.Runtime.CompilerServices;
-using MCPP.Net;
 using MCPP.Net.Common.DependencyInjection;
 using MCPP.Net.Common.Options;
 using MCPP.Net.Core;
+using MCPP.Net.Database;
 using MCPP.Net.Services;
-using Microsoft.AspNetCore.Authentication.OAuth;
-using Microsoft.Extensions.DependencyInjection;
-using ModelContextProtocol.Server;
 
 var builder = WebApplication.CreateBuilder(args);
-
 // 获取 IConfiguration
 var configuration = builder.Configuration;
 
@@ -20,6 +14,8 @@ builder.Services.AddControllers();
 // 注册Swagger服务
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<McppDbContext>(ob => ob.Configure(builder.Configuration));
 
 // 注册MCP服务
 builder.Services.AddSingleton<IMcpServerMethodRegistry, McpServerMethodRegistry>();
@@ -31,6 +27,7 @@ builder.Services.AddSingleton<SwaggerImportService>();
 builder.Services.AddSingleton<IToolAssemblyLoader, ToolAssemblyLoader>();
 builder.Services.AddSingleton<IAssemblyBuilder, CecilAssemblyBuilder>();
 builder.Services.AddScoped<IToolAppService, ToolAppService>();
+builder.Services.AddSingleton<DatabaseInitService>();
 
 //InitConfig(builder.Services);
 
@@ -54,14 +51,11 @@ var app = builder.Build();
 var importedToolsService = app.Services.GetRequiredService<ImportedToolsService>();
 Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
 
-
-
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "MCPP.Net API"); //注意中间段v1要和上面SwaggerDoc定义的名字保持一致
 });
-
 
 //app.UseHttpsRedirection();
 app.UseAuthorization();
@@ -73,7 +67,11 @@ app.UseDefaultFiles(new DefaultFilesOptions
 });
 
 app.UseStaticFiles();
-app.Run();
+
+// 初始化数据库
+await app.Services.GetRequiredService<DatabaseInitService>().Init();
+
+await app.RunAsync();
 
 /// <summary>
 /// 注入配置文件

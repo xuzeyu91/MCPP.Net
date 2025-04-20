@@ -485,13 +485,176 @@
             <see cref="M:MCPP.Net.Core.IToolAssemblyLoader.Load(System.String)"/> 的返回值，包含了加载的具体信息
             </summary>
         </member>
-        <member name="M:MCPP.Net.McpEndpointRouteBuilderExtensions.MapMcp(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder,System.Func{Microsoft.AspNetCore.Http.HttpContext,ModelContextProtocol.Server.IMcpServer,System.Threading.CancellationToken,System.Threading.Tasks.Task})">
+        <member name="T:MCPP.Net.Database.DatabaseExtensions">
             <summary>
-            Sets up endpoints for handling MCP HTTP Streaming transport.
+            DatabaseExtensions
             </summary>
-            <param name="endpoints">The web application to attach MCP HTTP endpoints.</param>
-            <param name="runSession">Provides an optional asynchronous callback for handling new MCP sessions.</param>
-            <returns>Returns a builder for configuring additional endpoint conventions like authorization policies.</returns>
+        </member>
+        <member name="M:MCPP.Net.Database.DatabaseExtensions.Configure(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Database.DatabaseInitService">
+            <summary>
+            数据库初始化服务
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Database.DatabaseInitService.#ctor(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory)">
+            <summary>
+            数据库初始化服务
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Database.DatabaseInitService.Init">
+            <summary>
+            初始化
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Database.DatabaseOptions">
+            <summary>
+            数据库配置选项
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.DatabaseOptions.DbType">
+            <summary>
+            数据库类型，目前支持 sqlite 和 postgresql
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.DatabaseOptions.ConnectionString">
+            <summary>
+            数据库连接字符串
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Database.Entities.Import">
+            <summary>
+            导入表，一条记录对应一个 swagger.json
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Id">
+            <summary>
+            自增ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.ImportFrom">
+            <summary>
+            导入链接
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Name">
+            <summary>
+            导入时设定的名称，长度限制[1,5]
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Description">
+            <summary>
+            对本条记录的描述，简短的 name 可能词不达意，用描述进行补充说明
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Json">
+            <summary>
+            swagger.json
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Enabled">
+            <summary>
+            是否启用
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.CreatedAt">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.UpdatedAt">
+            <summary>
+            更新时间
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Database.Entities.McpTool">
+            <summary>
+            MCP Tool 信息表，一条记录对应一个 MCP Tool，与导入表关联
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.Id">
+            <summary>
+            自增ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.ImportId">
+            <summary>
+            import表关联ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.Import">
+            <summary>
+            导入表关联
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.HttpMethod">
+            <summary>
+            http method
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.RequestPath">
+            <summary>
+            请求路径
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.Name">
+            <summary>
+            与 import 表的 name 拼接后为 MCP Tool Name，默认根据 request_path 生成，可修改
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.Description">
+            <summary>
+            导入时从 swagger 中提取，可修改，方便 MCP Client 匹配
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.InputSchema">
+            <summary>
+            导入时通过 swagger 信息生成
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.Enabled">
+            <summary>
+            是否启用，可修改，方便筛选掉不需要的接口
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.CreatedAt">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.McpTool.UpdatedAt">
+            <summary>
+            更新时间
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Database.McppDbContext">
+            <summary>
+            应用数据库上下文
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Database.McppDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{MCPP.Net.Database.McppDbContext})">
+            <summary>
+            构造函数
+            </summary>
+            <param name="options">数据库上下文选项</param>
+        </member>
+        <member name="P:MCPP.Net.Database.McppDbContext.Imports">
+            <summary>
+            导入表
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.McppDbContext.McpTools">
+            <summary>
+            MCP Tool信息表
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Database.McppDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <summary>
+            配置模型
+            </summary>
+            <param name="modelBuilder">模型构建器</param>
         </member>
         <member name="P:MCPP.Net.Models.ApiToolDto.Name">
             <summary>
