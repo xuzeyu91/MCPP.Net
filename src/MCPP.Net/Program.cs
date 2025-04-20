@@ -32,20 +32,20 @@ builder.Services.AddSingleton<IToolAssemblyLoader, ToolAssemblyLoader>();
 builder.Services.AddSingleton<IAssemblyBuilder, CecilAssemblyBuilder>();
 builder.Services.AddScoped<IToolAppService, ToolAppService>();
 
-InitConfig(builder.Services);
+//InitConfig(builder.Services);
 
 //反射根据特性依赖注入
 builder.Services.AddServicesFromAssemblies("MCPP.Net");
 
 // 构建MCP服务
-var mcpBuilder = builder.Services.AddMcpServer();
+var mcpBuilder = builder.Services.AddMcpServer().WithHttpTransport();
 
 // 注册程序集中的工具 - 必须在Build()之前完成
 mcpBuilder.WithToolsFromAssembly();
 
 mcpBuilder.UseToolsKeeper();
 
-mcpBuilder.WithDBTools(builder.Services.BuildServiceProvider());
+// mcpBuilder.WithDBTools(builder.Services.BuildServiceProvider());
 
 // 构建应用
 var app = builder.Build();
