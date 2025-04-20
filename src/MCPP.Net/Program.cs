@@ -60,13 +60,14 @@ app.UseSwaggerUI(c =>
 //app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-app.MapMcp();
 app.UseDefaultFiles(new DefaultFilesOptions
 {
     DefaultFileNames = new List<string> { "import.html" }
 });
 
 app.UseStaticFiles();
+
+app.MapMcp("/mcp");
 
 // 初始化数据库
 await app.Services.GetRequiredService<DatabaseInitService>().Init();
