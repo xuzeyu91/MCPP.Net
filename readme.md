@@ -19,7 +19,7 @@ MCPP.Net允许你将任意OpenAPI/Swagger定义的RESTful API服务动态转换�
 
 ## 技术栈
 
-- .NET 8
+- .NET 9
 - ASP.NET Core Web API
 - ModelContextProtocol 库
 - Swashbuckle.AspNetCore (Swagger)
@@ -29,7 +29,7 @@ MCPP.Net允许你将任意OpenAPI/Swagger定义的RESTful API服务动态转换�
 
 ### 系统要求
 
-- .NET 8 SDK或更高版本
+- .NET 9 SDK或更高版本
 - Windows/Linux/macOS
 
 ### 安装指南
