@@ -85,6 +85,16 @@
             <param name="result"></param>
             <returns></returns>
         </member>
+        <member name="T:MCPP.Net.Common.Middlewares.GlobalExceptionHandlerMiddleware">
+            <summary>
+            全局异常处理中间件
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Common.Middlewares.GlobalExceptionHandlerMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate,Microsoft.Extensions.Logging.ILogger{MCPP.Net.Common.Middlewares.GlobalExceptionHandlerMiddleware})">
+            <summary>
+            全局异常处理中间件
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Common.Model.PagedInfo`1">
             <summary>
             分页参数
@@ -263,26 +273,75 @@
             Swagger导入API控制器
             </summary>
         </member>
-        <member name="M:MCPP.Net.Controllers.ImportController.Import(MCPP.Net.Models.SwaggerImportRequest)">
+        <member name="M:MCPP.Net.Controllers.ImportController.#ctor(MCPP.Net.Services.IImportService)">
             <summary>
-            导入Swagger API并动态注册为MCP工具
+            Swagger导入API控制器
             </summary>
-            <param name="request">导入请求参数(包含SwaggerUrl和可选的SourceBaseUrl)</param>
-            <returns>导入结果</returns>
         </member>
-        <member name="M:MCPP.Net.Controllers.ImportController.GetImportedTools">
+        <member name="M:MCPP.Net.Controllers.ImportController.Import(MCPP.Net.Models.Import.CreateImportRequest)">
             <summary>
-            获取当前已导入的所有API工具
+            swagger 导入
             </summary>
-            <returns>已导入的API工具列表</returns>
         </member>
-        <member name="M:MCPP.Net.Controllers.ImportController.DeleteImportedTool(System.String,System.String)">
+        <member name="M:MCPP.Net.Controllers.ImportController.List">
             <summary>
-            删除已导入的API工具
+            查询所有 import.
             </summary>
-            <param name="nameSpace">工具命名空间</param>
-            <param name="className">类名</param>
-            <returns>操作结果</returns>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Get(System.Int64)">
+            <summary>
+            查询单个 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Update(System.Int64,MCPP.Net.Models.Import.UpdateImportRequest)">
+            <summary>
+            更新 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Delete(System.Int64)">
+            <summary>
+            删除 import
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Controllers.McpToolController">
+            <summary>
+            Swagger导入API控制器
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.#ctor(MCPP.Net.Services.IMcpToolService)">
+            <summary>
+            Swagger导入API控制器
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Import(MCPP.Net.Models.Tool.CreateToolRequest)">
+            <summary>
+            单个导入 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.List(System.Int64)">
+            <summary>
+            查询所有 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Get(System.Int64)">
+            <summary>
+            查询单个 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Update(System.Int64,MCPP.Net.Models.Tool.UpdateToolRequest)">
+            <summary>
+            更新 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Delete(System.Int64)">
+            <summary>
+            删除 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Clear(System.Int64)">
+            <summary>
+            根据 ImportId 删除全部关联的 Tool
+            </summary>
         </member>
         <member name="T:MCPP.Net.Controllers.ToolController">
             <summary>
@@ -534,14 +593,19 @@
             自增ID
             </summary>
         </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.Name">
+            <summary>
+            导入时设定的名称，长度限制[1,5]
+            </summary>
+        </member>
         <member name="P:MCPP.Net.Database.Entities.Import.ImportFrom">
             <summary>
             导入链接
             </summary>
         </member>
-        <member name="P:MCPP.Net.Database.Entities.Import.Name">
+        <member name="P:MCPP.Net.Database.Entities.Import.SourceBaseUrl">
             <summary>
-            导入时设定的名称，长度限制[1,5]
+            源服务器基础URL
             </summary>
         </member>
         <member name="P:MCPP.Net.Database.Entities.Import.Description">
@@ -557,6 +621,11 @@
         <member name="P:MCPP.Net.Database.Entities.Import.Enabled">
             <summary>
             是否启用
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Database.Entities.Import.McpTools">
+            <summary>
+            关联的所有MCP工具
             </summary>
         </member>
         <member name="P:MCPP.Net.Database.Entities.Import.CreatedAt">
@@ -634,11 +703,10 @@
             应用数据库上下文
             </summary>
         </member>
-        <member name="M:MCPP.Net.Database.McppDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{MCPP.Net.Database.McppDbContext})">
+        <member name="M:MCPP.Net.Database.McppDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{MCPP.Net.Database.McppDbContext},MCPP.Net.Core.McpToolsKeeper)">
             <summary>
             构造函数
             </summary>
-            <param name="options">数据库上下文选项</param>
         </member>
         <member name="P:MCPP.Net.Database.McppDbContext.Imports">
             <summary>
@@ -679,6 +747,63 @@
         <member name="P:MCPP.Net.Models.ApiToolDto.InputSchema">
             <summary>
             请求参数,描述
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.Import.CreateImportRequest">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.Name">
+            <summary>
+            导入时设定的名称，长度限制[1,5]
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.ImportFrom">
+            <summary>
+            导入链接
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.SourceBaseUrl">
+            <summary>
+            源服务器基础URL
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.Description">
+            <summary>
+            对本条记录的描述，简短的 name 可能词不达意，用描述进行补充说明
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.Json">
+            <summary>
+            swagger.json
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.Import.QueryImportDto">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.QueryImportDto.CreatedAt">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.QueryImportDto.UpdatedAt">
+            <summary>
+            更新时间
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.Import.UpdateImportRequest">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.UpdateImportRequest.Id">
+            <summary>
+            自增ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.UpdateImportRequest.Enabled">
+            <summary>
+            是否启用
             </summary>
         </member>
         <member name="T:MCPP.Net.Models.SwaggerImportRequest">
@@ -764,6 +889,56 @@
         <member name="P:MCPP.Net.Models.ImportedTool.SourceBaseUrl">
             <summary>
             源服务器基础URL
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.ImportId">
+            <summary>
+            import表关联ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.HttpMethod">
+            <summary>
+            http method
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.RequestPath">
+            <summary>
+            请求路径
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.Name">
+            <summary>
+            与 import 表的 name 拼接后为 MCP Tool Name，默认根据 request_path 生成，可修改
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.Description">
+            <summary>
+            导入时从 swagger 中提取，可修改，方便 MCP Client 匹配
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.CreateToolRequest.InputSchema">
+            <summary>
+            导入时通过 swagger 信息生成
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.QueryToolDto.CreatedAt">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.QueryToolDto.UpdatedAt">
+            <summary>
+            更新时间
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.UpdateToolRequest.Id">
+            <summary>
+            自增ID
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Tool.UpdateToolRequest.Enabled">
+            <summary>
+            是否启用
             </summary>
         </member>
         <member name="M:MCPP.Net.Repositories.Base.CreateEntity.EntityService.CreateEntity(System.String,System.String)">
@@ -1195,6 +1370,39 @@
             Nullable:False
             </summary>           
         </member>
+        <member name="T:MCPP.Net.Services.IImportService">
+            <summary>
+            MCP Import Service Interface    
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.ImportAsync(MCPP.Net.Models.Import.CreateImportRequest)">
+            <summary>
+            导入 import.
+            支持从 <see cref="P:MCPP.Net.Models.Import.CreateImportRequest.ImportFrom"/> 中下载 swagge.json；
+            支持通过 <see cref="P:MCPP.Net.Models.Import.CreateImportRequest.Json"/> 直接导入；
+            支持两个参数都不传入，此时该 import 为手动管理的 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.ListAsync">
+            <summary>
+            查询所有 import.
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.GetAsync(System.Int64)">
+            <summary>
+            查询单个 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.UpdateAsync(MCPP.Net.Models.Import.UpdateImportRequest)">
+            <summary>
+            更新 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.DeleteAsync(System.Int64)">
+            <summary>
+            删除 import
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Services.IMcpServerMethodRegistry">
             <summary>
             MCP服务器方法注册接口
@@ -1205,6 +1413,115 @@
             添加方法到MCP服务器
             </summary>
             <param name="methodInfo">方法信息</param>
+        </member>
+        <member name="T:MCPP.Net.Services.IMcpToolService">
+            <summary>
+            MCP Tool Service Interface
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.ImportAsync(System.Collections.Generic.List{MCPP.Net.Models.Tool.CreateToolRequest})">
+            <summary>
+            批量导入，覆盖所有 ImportId 相同的 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.ImportAsync(MCPP.Net.Models.Tool.CreateToolRequest)">
+            <summary>
+            单个导入，逻辑类似 Insert or Update，根据 HttpMethod 和 RequestPath 进行匹配已存在的记录
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.ListAsync(System.Int64)">
+            <summary>
+            根据 ImportId 查询所有 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.GetAsync(System.Int64)">
+            <summary>
+            根据 Id 查询 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.UpdateAsync(MCPP.Net.Models.Tool.UpdateToolRequest)">
+            <summary>
+            根据 Id 更新 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.DeleteAsync(System.Int64)">
+            <summary>
+            删除 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.DeleteByImportAsync(System.Int64)">
+            <summary>
+            根据 ImportId 删除全部关联的 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.ImportService.ConvertPathToToolName(System.String)">
+            <summary>
+            将路径转换为工具名称，将路径中的每一段使用`_`连接，对于路径参数使用`_{参数名}`替代
+            例如：/api/users/{userId} -> api_users__userId
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.ImportService.BuildInputSchema(System.Text.Json.Nodes.JsonNode)">
+            <summary>
+            根据 swagger json 中对参数的描述，构建 MCP Tool Input Schema
+            </summary>
+            <remarks>
+            基础格式：
+            {
+                "type": "object",
+                "properties:": {
+                    "parameters": {
+                        "type": "object",
+                        "properties": { }
+                        "required": []
+                    }
+                },
+                "required": ["parameters"]
+            }
+            
+            单一数据来源时，直接将参数添加到 parameters 下，多数据来源时，根据来源分组，避免参数重名：
+            {
+                "type": "object",
+                "properties:": {
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "object",
+                                "properties": { }
+                                "required": []
+                            },
+                            "query": { },
+                            "form": { },
+                            "body": { },
+                            "header": { }
+                        },
+                        "required": ["path", "query", "form", "body", "header"]
+                    }
+                },
+                "required": ["parameters"]
+            }
+            </remarks>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.McpToolService.ListAsync(System.Int64)">
+            <summary>
+            根据 ImportId 查询所有 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.McpToolService.GetAsync(System.Int64)">
+            <summary>
+            根据 Id 查询 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.McpToolService.DeleteByImportAsync(System.Int64)">
+            <summary>
+            根据 ImportId 删除全部关联的 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.Impl.McpToolService.ConvertPathToToolName(System.String)">
+            <summary>
+            将路径转换为工具名称，将路径中的每一段使用`_`连接，对于路径参数使用`_{参数名}`替代
+            例如：/api/users/{userId} -> api_users__userId
+            </summary>
         </member>
         <member name="T:MCPP.Net.Services.ImportedToolsService">
             <summary>

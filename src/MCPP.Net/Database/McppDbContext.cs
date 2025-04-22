@@ -1,5 +1,7 @@
+using MCPP.Net.Core;
 using MCPP.Net.Database.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace MCPP.Net.Database
 {
@@ -11,9 +13,9 @@ namespace MCPP.Net.Database
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="options">数据库上下文选项</param>
-        public McppDbContext(DbContextOptions<McppDbContext> options) : base(options)
+        public McppDbContext(DbContextOptions<McppDbContext> options, McpToolsKeeper toolsKeeper) : base(options)
         {
+            SavedChanges += toolsKeeper.OnDbContextSavedChanges;
         }
 
         /// <summary>
@@ -34,14 +36,23 @@ namespace MCPP.Net.Database
         {
             base.OnModelCreating(modelBuilder);
 
-            // 配置McpTool实体与Import表的关系
             modelBuilder.Entity<McpTool>(entity =>
             {
-                // 只配置实体关系，其他属性已通过数据注解配置
                 entity.HasOne(e => e.Import)
-                    .WithMany()
+                    .WithMany(i => i.McpTools)
                     .HasForeignKey(e => e.ImportId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.CreatedAt)
+                    .ValueGeneratedOnAdd()
+                    .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            });
+
+            modelBuilder.Entity<Import>(entity =>
+            {
+                entity.Property(e => e.CreatedAt)
+                    .ValueGeneratedOnAdd()
+                    .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
             });
         }
     }

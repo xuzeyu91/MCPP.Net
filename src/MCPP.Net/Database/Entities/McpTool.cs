@@ -78,12 +78,12 @@ namespace MCPP.Net.Database.Entities
         /// 创建时间
         /// </summary>
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 更新时间
         /// </summary>
         [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

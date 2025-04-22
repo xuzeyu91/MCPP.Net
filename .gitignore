@@ -3,9 +3,8 @@
 ################################################################################
 
 /src/MCPP.Net/.vs
-/src/MCPP.Net/bin/Debug/net8.0
-/src/MCPP.Net/obj
-/src/MCPP.Net/Properties
+/src/MCPP.Net/[Bb]in/
+/src/MCPP.Net/[Oo]bj/
 /src/MCPP.Net/appsettings.Development.json
 /src/MCPP.Net/ImportedSwaggers
 /src/MCPP.Net/ImportedTools

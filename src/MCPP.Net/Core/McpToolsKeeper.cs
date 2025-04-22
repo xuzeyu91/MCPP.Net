@@ -1,4 +1,5 @@
-﻿using ModelContextProtocol.Protocol.Types;
+﻿using Microsoft.EntityFrameworkCore;
+using ModelContextProtocol.Protocol.Types;
 using ModelContextProtocol.Server;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
@@ -26,6 +27,11 @@ namespace MCPP.Net.Core
             _map[DEFAULT_ID] = tools.ToolCollection!.ToImmutableDictionary(x => ((IMcpServerPrimitive)x).Name);
             
             logger.LogInformation($"McpToolsKeeper 已完成初始化，默认 Tools 共计 {tools.ToolCollection!.Count} 个");
+        }
+
+        internal void OnDbContextSavedChanges(object? sender, SavedChangesEventArgs e)
+        {
+            // todo: 需要通过某种机制通知客户端 tools 发生变化了
         }
 
         /// <summary>
