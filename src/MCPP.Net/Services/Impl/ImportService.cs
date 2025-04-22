@@ -6,6 +6,7 @@ using SqlSugar;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace MCPP.Net.Services.Impl
 {
@@ -16,6 +17,8 @@ namespace MCPP.Net.Services.Impl
         ILogger<ImportService> logger
         ) : IImportService
     {
+        private static readonly JsonSerializerOptions _SerializerOptions = new() { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+
         public async Task ImportAsync(CreateImportRequest request)
         {
             var sameNameImport = await dbContext.Imports.FirstOrDefaultAsync(x => x.Name == request.Name);
@@ -24,6 +27,8 @@ namespace MCPP.Net.Services.Impl
             await DownloadSwaggerJsonAsync(request);
             var import = request.ToImport();
             dbContext.Imports.Add(import);
+
+            await dbContext.SaveChangesAsync();
 
             if (!string.IsNullOrEmpty(import.Json))
             {
@@ -156,20 +161,8 @@ namespace MCPP.Net.Services.Impl
         /// 根据 swagger json 中对参数的描述，构建 MCP Tool Input Schema
         /// </summary>
         /// <remarks>
-        /// 基础格式：
-        /// {
-        ///     "type": "object",
-        ///     "properties:": {
-        ///         "parameters": {
-        ///             "type": "object",
-        ///             "properties": { }
-        ///             "required": []
-        ///         }
-        ///     },
-        ///     "required": ["parameters"]
-        /// }
-        /// 
-        /// 单一数据来源时，直接将参数添加到 parameters 下，多数据来源时，根据来源分组，避免参数重名：
+        /// json schema 固定格式：
+        /// <code>
         /// {
         ///     "type": "object",
         ///     "properties:": {
@@ -191,6 +184,7 @@ namespace MCPP.Net.Services.Impl
         ///     },
         ///     "required": ["parameters"]
         /// }
+        /// </code>
         /// </remarks>
         public static string BuildInputSchema(JsonNode operation)
         {
@@ -209,9 +203,9 @@ namespace MCPP.Net.Services.Impl
 
             if (mergedParameters == null || mergedParameters.Count == 0) return string.Empty;
 
-            var schema = mergedParameters.Count == 1 ? mergedParameters.First().Value : MergeSchema(mergedParameters);
+            var schema = MergeSchema(mergedParameters);
 
-            return schema.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+            return schema.ToJsonString(_SerializerOptions);
 
             static JsonObject MergeSchema(Dictionary<string, JsonObject> map)
             {

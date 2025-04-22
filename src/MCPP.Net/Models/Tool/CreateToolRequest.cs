@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 
 namespace MCPP.Net.Models.Tool
 {
+    [DebuggerDisplay("[{Name}] {HttpMethod} -> {RequestPath}")]
     public class CreateToolRequest
     {
         /// <summary>
