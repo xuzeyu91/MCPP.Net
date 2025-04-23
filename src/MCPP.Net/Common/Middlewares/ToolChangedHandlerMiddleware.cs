@@ -16,7 +16,7 @@ namespace MCPP.Net.Common.Middlewares
             }
             finally
             {
-                if (dbContext.ChangeTracker.HasChanges())
+                if (dbContext.HasChanged)
                 {
                     toolsKeeper.NotifyDataChanged();
                 }

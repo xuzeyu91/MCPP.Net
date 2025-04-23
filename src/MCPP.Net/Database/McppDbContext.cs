@@ -10,8 +10,20 @@ namespace MCPP.Net.Database
     /// <remarks>
     /// 构造函数
     /// </remarks>
-    public class McppDbContext(DbContextOptions<McppDbContext> options) : DbContext(options)
+    public class McppDbContext : DbContext
     {
+        /// <summary>
+        /// </summary>
+        public McppDbContext(DbContextOptions<McppDbContext> options) : base(options)
+        {
+            SavedChanges += (sender, args) => HasChanged = true;
+        }
+
+        /// <summary>
+        /// 数据是否发生了改变
+        /// </summary>
+        public bool HasChanged { get; private set; }
+
         /// <summary>
         /// 导入表
         /// </summary>
