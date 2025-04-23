@@ -255,12 +255,18 @@ namespace MCPP.Net.Services.Impl
                 {
                     "application/json" => "json",
                     "application/x-www-form-urlencoded" => "form",
-                    _ => throw new NotSupportedException($"不支持的数据类型: {item.Key}")
+                    _ => null
                 };
+                if (source == null) continue;
+
                 if (mergedParameters.ContainsKey(source)) throw new InvalidOperationException($"重复添加来自[{source}]的参数数据");
 
                 mergedParameters[source] = SwaggerSchemaToStandard(item.Value!["schema"]!).AsObject();
+                return;
             }
+
+            var keys = content.AsObject().Select(pair => pair.Key);
+            throw new NotSupportedException($"不支持的数据类型: {string.Join(", ", keys)}");
         }
 
         private static JsonNode SwaggerSchemaToStandard(JsonNode schemaNode)
