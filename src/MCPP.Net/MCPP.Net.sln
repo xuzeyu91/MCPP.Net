@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{02EA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryManagement", "..\..\samples\LibraryManagement\LibraryManagement.csproj", "{C7105B0B-0687-471D-A401-DD9D16C02748}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderManagement", "..\..\samples\OrderManagement\OrderManagement.csproj", "{0E6C369F-FCDD-485F-84DB-85077C65A929}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,12 +25,17 @@ Global
 		{C7105B0B-0687-471D-A401-DD9D16C02748}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7105B0B-0687-471D-A401-DD9D16C02748}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7105B0B-0687-471D-A401-DD9D16C02748}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E6C369F-FCDD-485F-84DB-85077C65A929}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E6C369F-FCDD-485F-84DB-85077C65A929}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E6C369F-FCDD-485F-84DB-85077C65A929}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E6C369F-FCDD-485F-84DB-85077C65A929}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C7105B0B-0687-471D-A401-DD9D16C02748} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{0E6C369F-FCDD-485F-84DB-85077C65A929} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5438F150-E44C-4BC9-8CB6-99AF2CFBF120}

@@ -6,8 +6,8 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-// 注册图书服务
-builder.Services.AddSingleton<LibraryManagement.Services.IBookService, LibraryManagement.Services.BookService>();
+// 注册订单服务
+builder.Services.AddSingleton<OrderManagement.Services.IOrderService, OrderManagement.Services.OrderService>();
 
 // 配置Swagger，支持XML注释
 builder.Services.AddSwaggerGen(options =>
