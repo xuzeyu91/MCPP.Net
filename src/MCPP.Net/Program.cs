@@ -65,7 +65,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.UseDefaultFiles(new DefaultFilesOptions
 {
-    DefaultFileNames = ["import.html"]
+    DefaultFileNames = ["import2.html"]
 });
 
 app.UseStaticFiles();

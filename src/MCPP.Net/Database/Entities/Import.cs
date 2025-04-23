@@ -8,7 +8,6 @@ namespace MCPP.Net.Database.Entities
     /// 导入表，一条记录对应一个 swagger.json
     /// </summary>
     [Table("import")]
-    [Index(nameof(ImportFrom), IsUnique = true, Name = "IX_Import_ImportFrom")]
     [Index(nameof(Name), IsUnique = true, Name = "IX_Import_Name")]
     public class Import
     {
