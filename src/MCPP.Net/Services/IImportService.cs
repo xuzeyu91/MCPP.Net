@@ -8,10 +8,9 @@ namespace MCPP.Net.Services
     public interface IImportService
     {
         /// <summary>
-        /// 导入 import.
-        /// 支持从 <see cref="CreateImportRequest.ImportFrom"/> 中下载 swagge.json；
-        /// 支持通过 <see cref="CreateImportRequest.Json"/> 直接导入；
-        /// 支持两个参数都不传入，此时该 import 为手动管理的 import
+        /// 相当于 Insert 方法，但如果导入时发现数据库已存在相同 Name 和 ImportFrom 的记录，会直接覆盖，
+        /// 如果 Name 相同但 ImportFrom 不同，会拒绝本次操作并提示 Name 已存在。
+        /// 如果需要更新某条记录的 ImportFrom，请调用 <see cref="UpdateAsync(UpdateImportRequest)"/>
         /// </summary>
         Task ImportAsync(CreateImportRequest request);
 

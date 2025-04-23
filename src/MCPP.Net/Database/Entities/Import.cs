@@ -63,7 +63,7 @@ namespace MCPP.Net.Database.Entities
         /// <summary>
         /// 关联的所有MCP工具
         /// </summary>
-        public virtual ICollection<McpTool> McpTools { get; set; } = new List<McpTool>();
+        public virtual ICollection<McpTool> McpTools { get; set; } = [];
 
         /// <summary>
         /// 创建时间

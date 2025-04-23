@@ -1,4 +1,5 @@
 using MCPP.Net.Database;
+using MCPP.Net.Database.Entities;
 using MCPP.Net.Models.Import;
 using MCPP.Net.Models.Tool;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,13 @@ namespace MCPP.Net.Services.Impl
         public async Task ImportAsync(CreateImportRequest request)
         {
             var sameNameImport = await dbContext.Imports.FirstOrDefaultAsync(x => x.Name == request.Name);
-            if (sameNameImport != null) throw new InvalidOperationException($"已存在 Name 为 {request.Name} 的 import");
+            if (sameNameImport != null)
+            {
+                if (sameNameImport.ImportFrom != request.ImportFrom) throw new InvalidOperationException($"已存在 Name 为 {request.Name} 的 import");
+
+                await InternalUpdateAsync(sameNameImport, request.ToUpdate(sameNameImport.Id));
+                return;
+            }
 
             await DownloadSwaggerJsonAsync(request);
             var import = request.ToImport();
@@ -56,10 +63,22 @@ namespace MCPP.Net.Services.Impl
         {
             var import = dbContext.Imports.Find(request.Id) ?? throw new InvalidOperationException($"无法找到 ID 为 {request.Id} 的 import");
 
-            var sameNameImport = await dbContext.Imports.FirstOrDefaultAsync(x => x.Name == request.Name);
+            var sameNameImport = await dbContext.Imports.FirstOrDefaultAsync(x => x.Name == request.Name && x.Id != request.Id);
             if (sameNameImport != null) throw new InvalidOperationException($"已存在 Name 为 {request.Name} 的 import");
 
-            if (import.ImportFrom != request.ImportFrom)
+            await InternalUpdateAsync(import, request);
+        }
+
+        public async Task DeleteAsync(long id)
+        {
+            var import = await dbContext.Imports.FindAsync(id) ?? throw new InvalidOperationException($"无法找到 ID 为 {id} 的 import");
+            dbContext.Imports.Remove(import);
+            await dbContext.SaveChangesAsync();
+        }
+
+        private async Task InternalUpdateAsync(Import import, UpdateImportRequest request)
+        {
+            if (!string.IsNullOrEmpty(request.ImportFrom))
             {
                 await DownloadSwaggerJsonAsync(request);
             }
@@ -78,13 +97,6 @@ namespace MCPP.Net.Services.Impl
             }
 
             import.Update(request);
-            await dbContext.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(long id)
-        {
-            var import = await dbContext.Imports.FindAsync(id) ?? throw new InvalidOperationException($"无法找到 ID 为 {id} 的 import");
-            dbContext.Imports.Remove(import);
             await dbContext.SaveChangesAsync();
         }
 
@@ -108,14 +120,13 @@ namespace MCPP.Net.Services.Impl
                     var operationDetails = operation.Value;
                     if (operationDetails == null) continue;
 
-                    var description = operationDetails["description"]?.GetValue<string>() ?? operationDetails["summary"]?.GetValue<string>() ?? string.Empty;
+                    var description = operationDetails["summary"]?.GetValue<string>() ?? operationDetails["description"]?.GetValue<string>() ?? string.Empty;
 
                     var tool = new CreateToolRequest
                     {
                         ImportId = importId,
                         HttpMethod = httpMethod,
                         RequestPath = pathUrl,
-                        Name = ConvertPathToToolName(pathUrl),
                         Description = description,
                         InputSchema = BuildInputSchema(operationDetails)
                     };
@@ -125,36 +136,6 @@ namespace MCPP.Net.Services.Impl
             }
 
             return tools;
-        }
-
-        /// <summary>
-        /// 将路径转换为工具名称，将路径中的每一段使用`_`连接，对于路径参数使用`_{参数名}`替代
-        /// 例如：/api/users/{userId} -> api_users__userId
-        /// </summary>
-        private static string ConvertPathToToolName(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return string.Empty;
-
-            var span = path.AsSpan();
-
-            var builder = new StringBuilder();
-            var segments = span.Split('/');
-            foreach (var range in segments)
-            {
-                if (range.Start.Equals(range.End)) continue;
-
-                builder.Append('_');
-                var segment = span[range];
-                if (segment.StartsWith('{'))
-                {
-                    segment = segment[1..^1];
-                    builder.Append('_');
-                }
-                builder.Append(segment);
-            }
-
-            return builder.ToString(1, builder.Length - 1);
         }
 
         /// <summary>
@@ -186,7 +167,7 @@ namespace MCPP.Net.Services.Impl
         /// }
         /// </code>
         /// </remarks>
-        public static string BuildInputSchema(JsonNode operation)
+        private static string BuildInputSchema(JsonNode operation)
         {
             Dictionary<string, JsonObject>? mergedParameters = null;
 
@@ -219,8 +200,16 @@ namespace MCPP.Net.Services.Impl
                 return new JsonObject
                 {
                     ["type"] = "object",
-                    ["properties"] = properties,
-                    ["required"] = new JsonArray(map.Keys.Select(x => JsonValue.Create(x)).ToArray())
+                    ["properties"] = new JsonObject
+                    {
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = properties,
+                            ["required"] = new JsonArray(map.Keys.Select(x => JsonValue.Create(x)).ToArray())
+                        }
+                    },
+                    ["required"] = new JsonArray(["parameters"])
                 };
             }
         }
@@ -294,7 +283,7 @@ namespace MCPP.Net.Services.Impl
                 properties[item.Key] = SwaggerSchemaToStandard(schema);
                 if (schema["description"] is { } description)
                 {
-                    properties[item.Key]!["description"] = description;
+                    properties[item.Key]!["description"] = description.DeepClone();
                 }
             }
 

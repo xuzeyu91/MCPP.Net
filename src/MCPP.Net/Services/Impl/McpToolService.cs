@@ -2,7 +2,6 @@
 using MCPP.Net.Database.Entities;
 using MCPP.Net.Models.Tool;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MCPP.Net.Services.Impl
@@ -12,27 +11,6 @@ namespace MCPP.Net.Services.Impl
         ILogger<McpToolService> logger
         ) : IMcpToolService
     {
-        internal static readonly string EmptyInputSchema;
-
-        static McpToolService()
-        {
-            const string EMPTY_INPUT_SCHEMA = """
-            {
-                "type": "object",
-                "properties": {
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                        },
-                        "required": []
-                    }
-                },
-                "required": ["parameters"]
-            }
-            """;
-            EmptyInputSchema = Regex.Replace(EMPTY_INPUT_SCHEMA, @"\s+", string.Empty);
-        }
-
         public async Task ImportAsync(List<CreateToolRequest> requests)
         {
             var importIds = requests.Select(r => r.ImportId).Distinct().ToArray();
@@ -40,22 +18,14 @@ namespace MCPP.Net.Services.Impl
 
             await DeleteByImportAsync(importIds[0]);
 
-            await dbContext.McpTools.AddRangeAsync(requests.Select(x => x.ToTool()));
+            var tools = requests.Select(x => x.ToTool());
+            await dbContext.McpTools.AddRangeAsync(tools);
             var count = await dbContext.SaveChangesAsync();
             logger.LogInformation("批量导入 Tool({ImportId}) 时，新增了 {count} 条新数据", importIds[0], count);
         }
 
         public async Task ImportAsync(CreateToolRequest request)
         {
-            if (string.IsNullOrEmpty(request.Name))
-            {
-                request.Name = ConvertPathToToolName(request.RequestPath);
-            }
-            if (string.IsNullOrEmpty(request.InputSchema))
-            {
-                request.InputSchema = EmptyInputSchema;
-            }
-
             long? id = null;
             var enabled = true;
             if (request is UpdateToolRequest updateRequest)
@@ -160,35 +130,6 @@ namespace MCPP.Net.Services.Impl
             }
 
             return tool;
-        }
-
-        /// <summary>
-        /// 将路径转换为工具名称，将路径中的每一段使用`_`连接，对于路径参数使用`_{参数名}`替代
-        /// 例如：/api/users/{userId} -> api_users__userId
-        /// </summary>
-        private static string ConvertPathToToolName(string path)
-        {
-            if (string.IsNullOrEmpty(path)) throw new ArgumentException("无法根据空的 Request Path 生成名称");
-
-            var span = path.AsSpan();
-
-            var builder = new StringBuilder();
-            var segments = span.Split('/');
-            foreach (var range in segments)
-            {
-                if (range.Start.Equals(range.End)) continue;
-
-                builder.Append('_');
-                var segment = span[range];
-                if (segment.StartsWith('{'))
-                {
-                    segment = segment[1..^1];
-                    builder.Append('_');
-                }
-                builder.Append(segment);
-            }
-
-            return builder.ToString(1, builder.Length - 1);
         }
     }
 }

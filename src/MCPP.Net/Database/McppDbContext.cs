@@ -1,4 +1,3 @@
-using MCPP.Net.Core;
 using MCPP.Net.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -8,16 +7,11 @@ namespace MCPP.Net.Database
     /// <summary>
     /// 应用数据库上下文
     /// </summary>
-    public class McppDbContext : DbContext
+    /// <remarks>
+    /// 构造函数
+    /// </remarks>
+    public class McppDbContext(DbContextOptions<McppDbContext> options) : DbContext(options)
     {
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        public McppDbContext(DbContextOptions<McppDbContext> options, McpToolsKeeper toolsKeeper) : base(options)
-        {
-            SavedChanges += toolsKeeper.OnDbContextSavedChanges;
-        }
-
         /// <summary>
         /// 导入表
         /// </summary>
@@ -27,6 +21,12 @@ namespace MCPP.Net.Database
         /// MCP Tool信息表
         /// </summary>
         public DbSet<McpTool> McpTools { get; set; } = null!;
+
+        /// <inheritdoc/>
+        protected override void OnConfiguring(DbContextOptionsBuilder builder)
+        {
+            builder.UseLazyLoadingProxies();
+        }
 
         /// <summary>
         /// 配置模型
