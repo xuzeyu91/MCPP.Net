@@ -7,7 +7,6 @@ using ModelContextProtocol.Protocol.Types;
 using ModelContextProtocol.Server;
 using System.Text.Json;
 using System.Text;
-using Azure.Core;
 
 namespace MCPP.Net.Core
 {
@@ -25,16 +24,6 @@ namespace MCPP.Net.Core
         /// 使用原始配置初始化<see cref="McpToolsKeeper"/>
         /// </summary>
         public void SetTools(ToolsCapability tools) => _tools = tools;
-
-        /// <summary>
-        /// 添加一个新的 Tool 集合
-        /// </summary>
-        public void Add(string id, IEnumerable<McpServerTool> tools) { }
-
-        /// <summary>
-        /// 移除一个 Tool 集合
-        /// </summary>
-        public void Remove(string id) { }
 
         /// <summary>
         /// 获取所有 Tool 集合

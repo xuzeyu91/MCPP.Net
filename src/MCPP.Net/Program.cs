@@ -51,10 +51,6 @@ mcpBuilder.UseToolsKeeper();
 // 构建应用
 var app = builder.Build();
 
-// 初始化ImportedToolsService，它会自动加载所有工具
-//var importedToolsService = app.Services.GetRequiredService<ImportedToolsService>();
-//Console.WriteLine($"已初始化ImportedToolsService，自动加载ImportedTools和ImportedSwaggers目录中的工具");
-
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseMiddleware<ToolChangedHandlerMiddleware>();
 
