@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  mcpp:
+    build:
+      context: ./src/MCPP.Net
+      dockerfile: Dockerfile
+    ports:
+      - "7103:80"
+    environment:
+      ASPNETCORE_URLS: http://*:80
+    volumes:
+      - ./src/MCPP.Net/Data:/app/Data
+    container_name: mcpp
+
+  lms:
+    build:
+      context: ./samples/LibraryManagement
+      dockerfile: Dockerfile
+    ports:
+      - "7104:80"
+    environment:
+      ASPNETCORE_URLS: http://*:80
+    container_name: lms
+
+  oms:
+    build:
+      context: ./samples/OrderManagement
+      dockerfile: Dockerfile
+    ports:
+      - "7105:80"
+    environment:
+      ASPNETCORE_URLS: http://*:80
+    container_name: oms
+
+networks:
+  default:
+    name: mcpp-network
