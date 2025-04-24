@@ -313,6 +313,23 @@
             删除 import
             </summary>
         </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Enable(System.Int64)">
+            <summary>
+            启用 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Disable(System.Int64)">
+            <summary>
+            禁用 import
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MCPP.Net.Controllers.ImportController.Reimport(System.Int64)">
+            <summary>
+            重新导入
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Controllers.McpToolController">
             <summary>
             Swagger导入API控制器
@@ -351,6 +368,16 @@
         <member name="M:MCPP.Net.Controllers.McpToolController.Clear(System.Int64)">
             <summary>
             根据 ImportId 删除全部关联的 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Enable(System.Int64)">
+            <summary>
+            启用 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Controllers.McpToolController.Disable(System.Int64)">
+            <summary>
+            禁用 import
             </summary>
         </member>
         <member name="T:MCPP.Net.Controllers.ToolController">
@@ -664,6 +691,49 @@
             swagger.json
             </summary>
         </member>
+        <member name="P:MCPP.Net.Models.Import.CreateImportRequest.Enabled">
+            <summary>
+            是否启用
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.Import.ImportResponse">
+            <summary>
+            导入成功后的响应
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Models.Import.ImportResponse.#ctor(System.Int64)">
+            <summary>
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Models.Import.ImportResponse.#ctor(System.Int64,System.Int32,System.Collections.Generic.List{MCPP.Net.Models.Import.ImportResponse.Failure})">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.ImportResponse.Id">
+            <summary>
+            导入成功后的 import id
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.ImportResponse.SuccessCount">
+            <summary>
+            导入成功的 tools 数量
+            </summary>
+        </member>
+        <member name="P:MCPP.Net.Models.Import.ImportResponse.Faileds">
+            <summary>
+            导入失败的详细信息
+            </summary>
+        </member>
+        <member name="T:MCPP.Net.Models.Import.ImportResponse.Failure">
+            <summary>
+            导入失败的详细信息
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Models.Import.ImportResponse.Failure.#ctor(System.String,System.String,System.String)">
+            <summary>
+            导入失败的详细信息
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Models.Import.QueryImportDto">
             <summary>
             </summary>
@@ -685,11 +755,6 @@
         <member name="P:MCPP.Net.Models.Import.UpdateImportRequest.Id">
             <summary>
             自增ID
-            </summary>
-        </member>
-        <member name="P:MCPP.Net.Models.Import.UpdateImportRequest.Enabled">
-            <summary>
-            是否启用
             </summary>
         </member>
         <member name="T:MCPP.Net.Models.SwaggerImportRequest">
@@ -1288,6 +1353,16 @@
             删除 import
             </summary>
         </member>
+        <member name="M:MCPP.Net.Services.IImportService.SetEnabledAsync(System.Int64,System.Boolean)">
+            <summary>
+            启用/禁用 import
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IImportService.ReimportAsync(System.Int64)">
+            <summary>
+            强制重新导入，可以用于应对导入失败的情况，也可以用于下载最新的 swagger.json 进行更新
+            </summary>
+        </member>
         <member name="T:MCPP.Net.Services.IMcpServerMethodRegistry">
             <summary>
             MCP服务器方法注册接口
@@ -1337,6 +1412,11 @@
         <member name="M:MCPP.Net.Services.IMcpToolService.DeleteByImportAsync(System.Int64)">
             <summary>
             根据 ImportId 删除全部关联的 Tool
+            </summary>
+        </member>
+        <member name="M:MCPP.Net.Services.IMcpToolService.SetEnabledAsync(System.Int64,System.Boolean)">
+            <summary>
+            启用/禁用 import
             </summary>
         </member>
         <member name="M:MCPP.Net.Services.Impl.ImportService.BuildInputSchema(System.Text.Json.Nodes.JsonNode)">

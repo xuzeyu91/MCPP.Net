@@ -12,7 +12,7 @@ namespace MCPP.Net.Services
         /// 如果 Name 相同但 ImportFrom 不同，会拒绝本次操作并提示 Name 已存在。
         /// 如果需要更新某条记录的 ImportFrom，请调用 <see cref="UpdateAsync(UpdateImportRequest)"/>
         /// </summary>
-        Task ImportAsync(CreateImportRequest request);
+        Task<ImportResponse> ImportAsync(CreateImportRequest request);
 
         /// <summary>
         /// 查询所有 import.
@@ -33,5 +33,15 @@ namespace MCPP.Net.Services
         /// 删除 import
         /// </summary>
         Task DeleteAsync(long id);
+
+        /// <summary>
+        /// 启用/禁用 import
+        /// </summary>
+        Task SetEnabledAsync(long id, bool enabled);
+
+        /// <summary>
+        /// 强制重新导入，可以用于应对导入失败的情况，也可以用于下载最新的 swagger.json 进行更新
+        /// </summary>
+        Task ReimportAsync(long id);
     }
 }

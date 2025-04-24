@@ -41,5 +41,10 @@ namespace MCPP.Net.Services
         /// 根据 ImportId 删除全部关联的 Tool
         /// </summary>
         Task DeleteByImportAsync(long importId);
+
+        /// <summary>
+        /// 启用/禁用 import
+        /// </summary>
+        Task SetEnabledAsync(long id, bool enabled);
     }
 }

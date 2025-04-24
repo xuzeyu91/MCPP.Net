@@ -20,15 +20,14 @@ namespace MCPP.Net.Services.Impl
     {
         private static readonly JsonSerializerOptions _SerializerOptions = new() { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
-        public async Task ImportAsync(CreateImportRequest request)
+        public async Task<ImportResponse> ImportAsync(CreateImportRequest request)
         {
             var sameNameImport = await dbContext.Imports.FirstOrDefaultAsync(x => x.Name == request.Name);
             if (sameNameImport != null)
             {
                 if (sameNameImport.ImportFrom != request.ImportFrom) throw new InvalidOperationException($"已存在 Name 为 {request.Name} 的 import");
 
-                await InternalUpdateAsync(sameNameImport, request.ToUpdate(sameNameImport.Id));
-                return;
+                return await InternalUpdateAsync(sameNameImport, request.ToUpdate(sameNameImport.Id));
             }
 
             await DownloadSwaggerJsonAsync(request);
@@ -37,14 +36,19 @@ namespace MCPP.Net.Services.Impl
 
             await dbContext.SaveChangesAsync();
 
+            ImportResponse? response = null;
             if (!string.IsNullOrEmpty(import.Json))
             {
-                var tools = SplitSwaggerToTools(import.Json, import.Id);
+                (var tools, var failures) = SplitSwaggerToTools(import.Json, import.Id);
 
                 await mcpToolService.ImportAsync(tools);
+
+                response = new(import.Id, tools.Count, failures);
             }
 
             await dbContext.SaveChangesAsync();
+
+            return response ?? new(import.Id);
         }
 
         public async Task<List<QueryImportDto>> ListAsync()
@@ -76,14 +80,38 @@ namespace MCPP.Net.Services.Impl
             await dbContext.SaveChangesAsync();
         }
 
-        private async Task InternalUpdateAsync(Import import, UpdateImportRequest request)
+        public async Task SetEnabledAsync(long id, bool enabled)
         {
+            var import = await dbContext.Imports.FindAsync(id) ?? throw new InvalidOperationException($"无法找到 ID 为 {id} 的 import");
+            import.Enabled = enabled;
+            await dbContext.SaveChangesAsync();
+        }
+
+        public Task ReimportAsync(long id)
+        {
+            var import = dbContext.Imports.Find(id) ?? throw new InvalidOperationException($"无法找到 ID 为 {id} 的 import");
+            return InternalUpdateAsync(import, new()
+            {
+                Id = id,
+                Name = import.Name,
+                Description = import.Description,
+                ImportFrom = import.ImportFrom,
+                SourceBaseUrl = import.SourceBaseUrl,
+                Json = import.Json,
+                Enabled = import.Enabled
+            }, true);
+        }
+
+        private async Task<ImportResponse> InternalUpdateAsync(Import import, UpdateImportRequest request, bool forceReimport = false)
+        {
+            ImportResponse? response = null;
+
             if (!string.IsNullOrEmpty(request.ImportFrom))
             {
                 await DownloadSwaggerJsonAsync(request);
             }
 
-            if (import.Json != request.Json)
+            if (forceReimport || import.Json != request.Json)
             {
                 if (string.IsNullOrEmpty(request.Json))
                 {
@@ -91,22 +119,26 @@ namespace MCPP.Net.Services.Impl
                 }
                 else
                 {
-                    var tools = SplitSwaggerToTools(request.Json, import.Id);
+                    (var tools, var failures) = SplitSwaggerToTools(request.Json, import.Id);
                     await mcpToolService.ImportAsync(tools);
+                    response = new(import.Id, tools.Count, failures);
                 }
             }
 
             import.Update(request);
             await dbContext.SaveChangesAsync();
+
+            return response ?? new(import.Id);
         }
 
-        private static List<CreateToolRequest> SplitSwaggerToTools(string json, long importId)
+        private (List<CreateToolRequest>, List<ImportResponse.Failure>) SplitSwaggerToTools(string json, long importId)
         {
             var jsonNode = JsonNode.Parse(json);
             var paths = jsonNode?["paths"]?.AsObject();
-            if (paths == null) return [];
+            if (paths == null) return ([], []);
 
             var tools = new List<CreateToolRequest>();
+            var failures = new List<ImportResponse.Failure>();
 
             foreach (var path in paths)
             {
@@ -122,20 +154,28 @@ namespace MCPP.Net.Services.Impl
 
                     var description = operationDetails["summary"]?.GetValue<string>() ?? operationDetails["description"]?.GetValue<string>() ?? string.Empty;
 
-                    var tool = new CreateToolRequest
+                    try
                     {
-                        ImportId = importId,
-                        HttpMethod = httpMethod,
-                        RequestPath = pathUrl,
-                        Description = description,
-                        InputSchema = BuildInputSchema(operationDetails)
-                    };
+                        var tool = new CreateToolRequest
+                        {
+                            ImportId = importId,
+                            HttpMethod = httpMethod,
+                            RequestPath = pathUrl,
+                            Description = description,
+                            InputSchema = BuildInputSchema(operationDetails)
+                        };
 
-                    tools.Add(tool);
+                        tools.Add(tool);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "导入工具失败 -> {HttpMethod} {RequestPath}", httpMethod, pathUrl);
+                        failures.Add(new(httpMethod, pathUrl, ex.Message));
+                    }
                 }
             }
 
-            return tools;
+            return (tools, failures);
         }
 
         /// <summary>

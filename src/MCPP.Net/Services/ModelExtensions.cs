@@ -38,7 +38,7 @@ namespace MCPP.Net.Services
                 SourceBaseUrl = request.SourceBaseUrl,
                 Description = request.Description,
                 Json = request.Json,
-                Enabled = true
+                Enabled = request.Enabled
             };
         }
 
@@ -68,7 +68,7 @@ namespace MCPP.Net.Services
                 SourceBaseUrl = request.SourceBaseUrl,
                 Description = request.Description,
                 Json = request.Json,
-                Enabled = true
+                Enabled = request.Enabled
             };
         }
 

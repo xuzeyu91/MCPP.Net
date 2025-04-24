@@ -2,7 +2,6 @@
 using MCPP.Net.Database.Entities;
 using MCPP.Net.Models.Tool;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace MCPP.Net.Services.Impl
 {
@@ -90,11 +89,7 @@ namespace MCPP.Net.Services.Impl
             logger.LogInformation("根据 ImportId({ImportId}) 删除了 {count} 条旧数据", importId, count);
         }
 
-        public Task EnableAsync(long id) => UpdateEnabledAsync(id, true);
-
-        public Task DisableAsync(long id) => UpdateEnabledAsync(id, false);
-
-        private async Task UpdateEnabledAsync(long id, bool enabled)
+        public async Task SetEnabledAsync(long id, bool enabled)
         {
             var tool = await dbContext.McpTools.FindAsync(id) ?? throw new ArgumentException($"无法找到对应的 Tool({id})");
             tool.Enabled = enabled;

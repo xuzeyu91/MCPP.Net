@@ -1,5 +1,6 @@
 ﻿using MCPP.Net.Models.Tool;
 using MCPP.Net.Services;
+using MCPP.Net.Services.Impl;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MCPP.Net.Controllers
@@ -73,6 +74,28 @@ namespace MCPP.Net.Controllers
         public async Task<IActionResult> Clear([FromQuery] long importId)
         {
             await toolService.DeleteByImportAsync(importId);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 启用 import
+        /// </summary>
+        [HttpPost("{id}/enable")]
+        public async Task<IActionResult> Enable(long id)
+        {
+            await toolService.SetEnabledAsync(id, true);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 禁用 import
+        /// </summary>
+        [HttpPost("{id}/disable")]
+        public async Task<IActionResult> Disable(long id)
+        {
+            await toolService.SetEnabledAsync(id, false);
 
             return Ok();
         }
