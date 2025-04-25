@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCPP.Net 导入系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans SC', 'sans-serif']
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen text-gray-100 font-sans">
+    <div class="bg-cover bg-center min-h-screen"
+        style="background-image: url('https://images.unsplash.com/photo-1639836852109-dd9f99e7bf53?auto=format&fit=crop&q=80');">
+        <div class="container mx-auto px-4 py-12">
+            <header class="mb-12 text-center">
+                <h1
+                    class="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                    MCPP.Net 导入系统</h1>
+                <p class="text-xl text-blue-200 opacity-80">导入Swagger API并动态注册为MCP工具</p>
+            </header>
+
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- 导入表单区域 -->
+                <div class="md:col-span-2 glass rounded-2xl p-8 shadow-lg border border-white/10">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        导入Swagger API
+                    </h2>
+
+                    <form id="importForm" class="space-y-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-blue-100 mb-1">名称（1-5字符） *</label>
+                            <div class="flex items-center">
+                                <input type="text" id="name" name="name" required minlength="1" maxlength="5"
+                                    class="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:border-blue-400 focus:ring focus:ring-blue-400/20 transition text-white placeholder-blue-200/50"
+                                    placeholder="将作为 MCP Tool 名称前缀">
+                                <div style="width:15px;"></div>
+                                <!-- Switch 开关 -->
+                                <label class="relative inline-flex items-center cursor-pointer ml-0">
+                                    <input type="checkbox" id="enabledSwitch" class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-400 rounded-full peer peer-checked:bg-blue-500 transition">
+                                    </div>
+                                    <div
+                                        class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition peer-checked:translate-x-5">
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="importFrom"
+                                class="block text-sm font-medium text-blue-100 mb-1">导入链接（可选）</label>
+                            <input type="text" id="importFrom" name="importFrom"
+                                class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:border-blue-400 focus:ring focus:ring-blue-400/20 transition text-white placeholder-blue-200/50"
+                                placeholder="https://example.com/swagger/v1/swagger.json">
+                        </div>
+                        <div>
+                            <label for="sourceBaseUrl" class="block text-sm font-medium text-blue-100 mb-1">源服务器基础URL
+                                *</label>
+                            <input type="text" id="sourceBaseUrl" name="sourceBaseUrl" required
+                                class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:border-blue-400 focus:ring focus:ring-blue-400/20 transition text-white placeholder-blue-200/50"
+                                placeholder="https://api.example.com">
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-blue-100 mb-1">描述（可选）</label>
+                            <input type="text" id="description" name="description"
+                                class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:border-blue-400 focus:ring focus:ring-blue-400/20 transition text-white placeholder-blue-200/50"
+                                placeholder="">
+                        </div>
+                        <div>
+                            <label for="json"
+                                class="block text-sm font-medium text-blue-100 mb-1">swagger.json内容（可选）</label>
+                            <textarea id="json" name="json" rows="4"
+                                class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:border-blue-400 focus:ring focus:ring-blue-400/20 transition text-white placeholder-blue-200/50"
+                                placeholder="可直接粘贴swagger.json内容"></textarea>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" id="importButton"
+                                class="w-full p-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg text-white font-medium shadow-lg shadow-blue-500/30 transition flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                </svg>
+                                开始导入
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!--执行状态和结果 -->
+                <div class="glass rounded-2xl p-6 shadow-lg border border-white/10 flex flex-col">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        执行结果
+                    </h2>
+
+                    <div id="importStatus" class="hidden mb-4 p-4 rounded-lg bg-white/5">
+                        <div class="flex items-center">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mr-2"></div>
+                            <span>正在处理...</span>
+                        </div>
+                    </div>
+
+                    <div id="importResult" class="hidden flex-1 overflow-auto">
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-lg bg-green-900/30 border border-green-500/30">
+                                <h3 class="font-bold text-green-400 flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    执行成功
+                                </h3>
+                                <p id="importTime" class="text-sm mt-1 text-green-200">执行时间：</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="importError" class="hidden p-4 rounded-lg bg-red-900/30 border border-red-500/30">
+                        <h3 class="font-bold text-red-400 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            执行失败
+                        </h3>
+                        <p id="errorMessage" class="text-sm mt-1 text-red-200"></p>
+                        <p id="errorTime" class="text-sm mt-1 text-red-200"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导入信息列表 -->
+            <div class="max-w-4xl mx-auto mt-8 glass rounded-2xl p-8 shadow-lg border border-white/10">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-purple-400" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    导入信息列表
+                </h2>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white/5 rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    名称</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    导入链接</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    源服务器基础URL</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    描述</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    是否启用</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    创建时间</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    更新时间</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                                    操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="toolsList" class="divide-y divide-white/5">
+                            <!-- 工具列表将在此动态显示 -->
+                        </tbody>
+                    </table>
+                </div>
+
+
+
+                <div id="noTools" class="text-center py-8 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 opacity-50" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <p>暂无已导入信息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const importForm = document.getElementById('importForm');
+            const importStatus = document.getElementById('importStatus');
+            const importResult = document.getElementById('importResult');
+            const importError = document.getElementById('importError');
+            const apiCount = document.getElementById('apiCount');
+            const toolClassName = document.getElementById('toolClassName');
+            const apiList = document.getElementById('apiList');
+            const errorMessage = document.getElementById('errorMessage');
+            const toolsList = document.getElementById('toolsList');
+            const noTools = document.getElementById('noTools');
+            const importButton = document.getElementById('importButton');
+
+            // 获取已导入工具列表
+            loadImportList();
+
+            // 工具列表加载函数
+            function loadImportList() {
+                const toolsList = document.getElementById('toolsList');
+                const noTools = document.getElementById('noTools');
+                toolsList.innerHTML = '';
+                fetch('/api/imports')
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if (Array.isArray(data) && data.length > 0) {
+                            noTools.classList.add('hidden');
+                            data.forEach(item => {
+                                const row = document.createElement('tr');
+                                row.className = 'hover:bg-white/10 transition';
+                                row.innerHTML = `
+                                    <td class="px-6 py-4 whitespace-nowrap"><a href="#" class="tool-list-link text-blue-300 underline" data-import-id="${item.id}">${item.name}</a></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">${item.importFrom || ''}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">${item.sourceBaseUrl}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">${item.description || ''}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+    <label class="flex items-center cursor-pointer relative">
+        <input type="checkbox" class="enable-switch sr-only peer" data-id="${item.id}" ${item.enabled ? 'checked' : ''}>
+        <div class="w-11 h-6 bg-gray-200 rounded-full transition peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-400 peer-checked:bg-blue-500"></div>
+        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-5"></div>
+    </label>
+</td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap">${formatDateTime(item.createdAt)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">${formatDateTime(item.updatedAt)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap flex gap-2">
+    <button class="reimport-btn text-green-400 hover:text-green-300 transition" data-id="${item.id}" title="重新导入">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.582 9A7.974 7.974 0 0112 4c2.21 0 4.21.896 5.657 2.343M18.418 15A7.974 7.974 0 0112 20a7.978 7.978 0 01-5.657-2.343" />
+        </svg>
+    </button>
+    <button class="delete-btn text-red-400 hover:text-red-300 transition" data-id="${item.id}" title="删除">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    </button>
+</td>
+                                `;
+                                toolsList.appendChild(row);
+                            });
+                        } else {
+                            noTools.classList.remove('hidden');
+                        }
+                        // 绑定启用/禁用开关事件
+                        document.querySelectorAll('.enable-switch').forEach(function (switchEl) {
+                            switchEl.addEventListener('change', function () {
+                                const id = this.getAttribute('data-id');
+                                const checked = this.checked;
+                                const url = checked ? `/api/imports/${id}/enable` : `/api/imports/${id}/disable`;
+                                const originChecked = !checked;
+                                this.disabled = true;
+                                fetch(url, { method: 'POST' })
+                                    .then(resp => {
+                                        if (!resp.ok) throw new Error('操作失败');
+                                    })
+                                    .catch(() => {
+                                        this.checked = originChecked;
+                                        alert('操作失败，状态未改变');
+                                    })
+                                    .finally(() => {
+                                        this.disabled = false;
+                                    });
+                            });
+                        });
+                        // 绑定重新导入事件
+                        document.querySelectorAll('.reimport-btn').forEach(btn => {
+                            btn.onclick = function () {
+                                const id = this.getAttribute('data-id');
+                                if (!id) return;
+                                this.disabled = true;
+                                const originalText = this.innerHTML;
+                                this.innerHTML = '<svg class="animate-spin h-5 w-5 inline text-green-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> 处理中';
+                                fetch(`/api/imports/${id}/reimport`, { method: 'POST' })
+                                    .then(resp => {
+                                        if (!resp.ok) throw new Error('重新导入失败');
+                                        this.innerHTML = originalText;
+                                        alert('重新导入成功');
+                                    })
+                                    .catch(() => {
+                                        this.innerHTML = originalText;
+                                        alert('重新导入失败');
+                                    })
+                                    .finally(() => {
+                                        this.disabled = false;
+                                    });
+                            };
+                        });
+                        // 绑定删除事件
+                        document.querySelectorAll('.delete-btn').forEach(btn => {
+                            btn.onclick = function () {
+                                const id = this.getAttribute('data-id');
+                                if (!id) return;
+                                if (!confirm('确定要删除该导入记录吗？')) return;
+                                // 显示导入状态loading
+                                importStatus.classList.remove('hidden');
+                                importResult.classList.add('hidden');
+                                importError.classList.add('hidden');
+                                fetch(`/api/imports/${id}`, {
+                                    method: 'DELETE'
+                                })
+                                    .then(async resp => {
+                                        const now = new Date();
+                                        const pad = n => n.toString().padStart(2, '0');
+                                        const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                                        if (resp.ok) {
+                                            importStatus.classList.add('hidden');
+                                            importResult.classList.remove('hidden');
+                                            document.getElementById('importTime').textContent = `执行时间：${timeStr}`;
+                                            loadImportList();
+                                        } else {
+                                            let errorMsg = '';
+                                            try {
+                                                const data = await resp.json();
+                                                errorMsg = data && data.error ? data.error : '';
+                                            } catch { }
+                                            importStatus.classList.add('hidden');
+                                            importError.classList.remove('hidden');
+                                            document.getElementById('errorMessage').textContent = errorMsg ? `删除失败：${errorMsg}` : '删除失败';
+                                            document.getElementById('errorTime').textContent = `执行时间：${timeStr}`;
+                                        }
+                                    })
+                                    .catch(() => {
+                                        importStatus.classList.add('hidden');
+                                        importError.classList.remove('hidden');
+                                        document.getElementById('errorMessage').textContent = '网络错误，删除失败';
+                                        const now = new Date();
+                                        const pad = n => n.toString().padStart(2, '0');
+                                        const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                                        document.getElementById('errorTime').textContent = `执行时间：${timeStr}`;
+                                    });
+                            };
+                        });
+                    })
+                    .catch(() => {
+                        noTools.classList.remove('hidden');
+                    });
+            }
+            function formatDateTime(dtStr) {
+                if (!dtStr) return '';
+                const dt = new Date(dtStr);
+                const pad = n => n.toString().padStart(2, '0');
+                return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+            }
+
+            // 工具列表弹窗逻辑
+            document.body.addEventListener('click', function (e) {
+                if (e.target.classList.contains('tool-list-link')) {
+                    e.preventDefault();
+                    const importId = e.target.getAttribute('data-import-id');
+                    if (!importId) return;
+                    const modal = document.getElementById('toolListModal');
+                    const modalBody = document.getElementById('toolListModalBody');
+                    const modalEmpty = document.getElementById('toolListModalEmpty');
+                    modalBody.innerHTML = '';
+                    modalEmpty.classList.add('hidden');
+                    modal.classList.remove('hidden');
+                    fetch(`/api/mcptools?importId=${importId}`)
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if (Array.isArray(data) && data.length > 0) {
+                                data.forEach(tool => {
+                                    const row = document.createElement('tr');
+                                    row.className = 'hover:bg-white/10 transition';
+                                    row.innerHTML = `
+                                        <td class="px-6 py-4 whitespace-nowrap">${tool.name || ''}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${tool.httpMethod}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${tool.requestPath}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${tool.description}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+    <label class="flex items-center cursor-pointer relative">
+        <input type="checkbox" class="enable-switch sr-only peer" data-id="${tool.id}" ${tool.enabled ? 'checked' : ''}>
+        <div class="w-11 h-6 bg-gray-200 rounded-full transition peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-400 peer-checked:bg-blue-500"></div>
+        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 peer-checked:translate-x-5"></div>
+    </label>
+</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${formatDateTime(tool.createdAt)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${formatDateTime(tool.updatedAt)}</td>
+                                    `;
+                                    modalBody.appendChild(row);
+                                });
+                            } else {
+                                modalEmpty.classList.remove('hidden');
+                            }
+                            // 绑定弹窗内启用/禁用开关事件
+                            modalBody.querySelectorAll('.enable-switch').forEach(function (switchEl) {
+                                switchEl.addEventListener('change', function () {
+                                    const id = this.getAttribute('data-id');
+                                    if (!id) return;
+                                    const originChecked = this.checked;
+                                    this.disabled = true;
+                                    const url = this.checked
+                                        ? `/api/mcptools/${id}/enable`
+                                        : `/api/mcptools/${id}/disable`;
+                                    fetch(url, { method: 'POST' })
+                                        .then(resp => {
+                                            if (!resp.ok) throw new Error('操作失败');
+                                        })
+                                        .catch(() => {
+                                            this.checked = !originChecked;
+                                            alert('操作失败，状态未改变');
+                                        })
+                                        .finally(() => {
+                                            this.disabled = false;
+                                        });
+                                });
+                            });
+                        })
+                        .catch(() => {
+                            modalEmpty.classList.remove('hidden');
+                        });
+                }
+            });
+            document.getElementById('closeToolListModal').onclick = function () {
+                document.getElementById('toolListModal').classList.add('hidden');
+            };
+            // 表单提交
+            importForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                importButton.disabled = true;
+                importButton.classList.add('opacity-60', 'cursor-not-allowed');
+                importStatus.classList.remove('hidden');
+                importResult.classList.add('hidden');
+                importError.classList.add('hidden');
+
+                const name = document.getElementById('name').value.trim();
+                const importFrom = document.getElementById('importFrom').value.trim();
+                const sourceBaseUrl = document.getElementById('sourceBaseUrl').value.trim();
+                const description = document.getElementById('description').value.trim();
+                const json = document.getElementById('json').value.trim();
+
+                // 校验
+                if (!name || !sourceBaseUrl) {
+                    importButton.disabled = false;
+                    importButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    importStatus.classList.add('hidden');
+                    importError.classList.remove('hidden');
+                    errorMessage.textContent = '请填写所有必填项';
+                    return;
+                }
+
+                // 构造请求体，空字符串转为 undefined
+                const enabled = document.getElementById('enabledSwitch').checked;
+                const payload = {
+                    name,
+                    enabled,
+                    importFrom: importFrom || undefined,
+                    sourceBaseUrl,
+                    description: description || undefined,
+                    json: json || undefined
+                };
+
+
+                fetch('/api/imports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(async response => {
+                        if (!response.ok) {
+                            let errorMsg = '';
+                            try {
+                                const data = await response.json();
+                                errorMsg = data && data.error ? data.error : '';
+                            } catch {
+                                errorMsg = '';
+                            }
+                            throw { errorMsg };
+                        }
+                        importStatus.classList.add('hidden');
+                        importResult.classList.remove('hidden');
+                        // 设置执行时间
+                        const now = new Date();
+                        const pad = n => n.toString().padStart(2, '0');
+                        const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                        document.getElementById('importTime').textContent = `执行时间：${timeStr}`;
+                        loadImportList();
+                    })
+                    .catch(error => {
+                        importStatus.classList.add('hidden');
+                        importError.classList.remove('hidden');
+                        // 获取当前时间
+                        const now = new Date();
+                        const pad = n => n.toString().padStart(2, '0');
+                        const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                        let errorMsg = '';
+                        if (error && error.errorMsg) {
+                            errorMsg = error.errorMsg;
+                        } else if (error && error.message && error.message !== '导入失败') {
+                            errorMsg = error.message;
+                        } else {
+                            errorMsg = '';
+                        }
+                        errorMessage.textContent = errorMsg;
+                        document.getElementById('errorTime').textContent = `执行时间：${timeStr}`;
+                    })
+                    .finally(() => {
+                        importButton.disabled = false;
+                        importButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    });
+            });
+
+            // 获取已导入工具列表
+            function fetchImportedTools() {
+                fetch('/api/Import/GetImportedTools')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            noTools.classList.add('hidden');
+                            renderToolsList(data);
+                        } else {
+                            noTools.classList.remove('hidden');
+                            toolsList.innerHTML = '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取工具列表失败:', error);
+                    });
+            }
+
+            // 渲染工具列表
+            function renderToolsList(tools) {
+                toolsList.innerHTML = '';
+
+                tools.forEach(tool => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-white/10 transition';
+
+                    // 格式化日期
+                    const date = new Date(tool.importDate);
+                    const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${tool.nameSpace}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${tool.className}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${tool.apiCount}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button class="delete-btn text-red-400 hover:text-red-300 transition" 
+                                data-namespace="${tool.nameSpace}" 
+                                data-classname="${tool.className}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+
+                    toolsList.appendChild(row);
+                });
+
+                // 添加删除事件监听
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const nameSpace = this.getAttribute('data-namespace');
+                        const className = this.getAttribute('data-classname');
+
+                        if (confirm(`确定要删除 ${nameSpace}.${className} 吗？`)) {
+                            deleteImportedTool(nameSpace, className);
+                        }
+                    });
+                });
+            }
+
+            // 删除导入的工具
+            function deleteImportedTool(nameSpace, className) {
+                fetch(`/api/Import/DeleteImportedTool?nameSpace=${encodeURIComponent(nameSpace)}&className=${encodeURIComponent(className)}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 刷新工具列表
+                            fetchImportedTools();
+                        } else {
+                            alert(data.message || '删除失败');
+                        }
+                    })
+                    .catch(error => {
+                        alert('删除失败: ' + (error.message || '未知错误'));
+                    });
+            }
+        });
+    </script>
+</body>
+<!-- 工具列表弹窗 -->
+<div id="toolListModal"
+    class="fixed top-0 left-0 w-screen h-screen z-50 flex items-center justify-center bg-black/40 hidden"
+    style="pointer-events:auto;">
+    <div
+        class="bg-gray-800 rounded-2xl p-8 shadow-lg border border-white/10 max-w-[90vw] min-w-[400px] w-full max-h-[80vh] flex flex-col relative">
+        <button id="closeToolListModal"
+            class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            工具列表
+        </h2>
+        <div class="overflow-x-auto flex-1 overflow-y-auto">
+            <table class="min-w-full bg-white/5 rounded-lg overflow-hidden">
+                <thead>
+                    <tr class="border-b border-white/10">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">工具名
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
+                            HTTP方法</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">路径
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">描述
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">是否启用
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">创建时间
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">更新时间
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="toolListModalBody" class="divide-y divide-white/5">
+                    <!-- 工具行 -->
+                </tbody>
+            </table>
+        </div>
+        <div id="toolListModalEmpty" class="text-center py-8 text-gray-400 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 opacity-50" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <p>暂无工具</p>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

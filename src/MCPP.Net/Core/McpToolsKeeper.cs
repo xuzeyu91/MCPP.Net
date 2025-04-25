@@ -1,7 +1,12 @@
-﻿using ModelContextProtocol.Protocol.Types;
+﻿using MCPP.Net.Database;
+using MCPP.Net.Database.Entities;
+using MCPP.Net.UnsafeImports;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
+using ModelContextProtocol.Protocol.Types;
 using ModelContextProtocol.Server;
-using System.Collections.Concurrent;
-using System.Collections.Immutable;
+using System.Text.Json;
+using System.Text;
 
 namespace MCPP.Net.Core
 {
@@ -10,91 +15,215 @@ namespace MCPP.Net.Core
     /// </summary>
     public class McpToolsKeeper(ILogger<McpToolsKeeper> logger)
     {
-        private const string DEFAULT_ID = "__default__";
+        private static readonly object MAP_KEY = new();
 
-        private ToolsCapability? _tools;
-        private readonly ConcurrentDictionary<string, ImmutableDictionary<string, McpServerTool>> _map = [];
+        private readonly AIFunction _forwardCall = AIFunctionFactory.Create(ForwardCallAsync);
+        private ToolsCapability _tools = null!;
 
         /// <summary>
         /// 使用原始配置初始化<see cref="McpToolsKeeper"/>
         /// </summary>
-        public void SetTools(ToolsCapability tools)
-        {
-            if (_tools is not null) throw new InvalidOperationException("Tools already been set.");
-            
-            _tools = tools;
-            _map[DEFAULT_ID] = tools.ToolCollection!.ToImmutableDictionary(x => ((IMcpServerPrimitive)x).Name);
-            
-            logger.LogInformation($"McpToolsKeeper 已完成初始化，默认 Tools 共计 {tools.ToolCollection!.Count} 个");
-        }
-
-        /// <summary>
-        /// 添加一个新的 Tool 集合
-        /// </summary>
-        public void Add(string id, IEnumerable<McpServerTool> tools)
-        {
-            if (_map.ContainsKey(id))
-            {
-                Remove(id);
-            }
-
-            _map[id] = tools.ToImmutableDictionary(x => ((IMcpServerPrimitive)x).Name);
-
-            logger.LogInformation($"新增 Tool 集合 [{id}]，共计包含 {tools.Count()} 个 Tools");
-
-            // todo: 需要通过某种机制通知客户端 tools 发生变化了
-            //if (_tools is not null)
-            //{
-            //    _tools.ListChanged = true;
-            //}
-        }
-
-        /// <summary>
-        /// 移除一个 Tool 集合
-        /// </summary>
-        public void Remove(string id)
-        {
-            if (_map.TryRemove(id, out _))
-            {
-                logger.LogInformation($"移出 Tool 集合 [{id}]");
-            }
-            else
-            {
-                logger.LogWarning($"Tool 集合 [{id}] 不存在，无法移除");
-            }
-
-            // todo: 需要通过某种机制通知客户端 tools 发生变化了
-            //if (_tools is not null)
-            //{
-            //    _tools.ListChanged = true;
-            //}
-        }
+        public void SetTools(ToolsCapability tools) => _tools = tools;
 
         /// <summary>
         /// 获取所有 Tool 集合
         /// </summary>
-        public ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken token)
+        public async ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken token)
         {
             var result = new ListToolsResult();
 
-            result.Tools.AddRange(_map.Values.SelectMany(x => x).Select(x => x.Value.ProtocolTool));
+            if (_tools.ToolCollection is { } collection)
+            {
+                result.Tools.AddRange(collection.Select(x => x.ProtocolTool));
+            }
 
-            return ValueTask.FromResult(result);
+            var dbContext = context.Services!.GetRequiredService<McppDbContext>();
+
+            var imports = await dbContext.Imports.Where(x => x.Enabled).ToArrayAsync(token);
+            var importTools = imports.Select(x => x.McpTools.Select(y => T2t(y))).SelectMany(x => x);
+
+            result.Tools.AddRange(importTools);
+
+            return result;
         }
 
         /// <summary>
         /// 调用指定的 Tool
         /// </summary>
-        public ValueTask<CallToolResponse> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken token)
+        public async ValueTask<CallToolResponse> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken token)
         {
-            if (context.Params is not null)
+            if (context.Params is not { } param) throw new InvalidOperationException($"无法获取 Tool name");
+
+            var toolName = param.Name;
+            if (_tools.ToolCollection is { } tools && tools.TryGetPrimitive(toolName, out var tool))
             {
-                foreach (var tools in _map.Values)
+                return await tool.InvokeAsync(context, token);
+            }
+
+            var dbContext = context.Services!.GetRequiredService<McppDbContext>();
+
+            var mcpTool = await dbContext.McpTools.FirstOrDefaultAsync(x => x.Import.Name + "_" + x.Name == toolName);
+
+            if (mcpTool is null) throw new InvalidOperationException($"无法找到名为 {toolName} 的 Mcp Server Tool");
+
+            var arguments = new AIFunctionArguments
+            {
+                Services = context.Services,
+                Context = new Dictionary<object, object?>
                 {
-                    if (tools.TryGetValue(context.Params.Name, out var tool)) return tool.InvokeAsync(context, token);
+                    [typeof(RequestContext<CallToolRequestParams>)] = context,
+                    [MAP_KEY] = mcpTool
+                }
+            };
+            if (context.Params?.Arguments is { } args)
+            {
+                foreach (var kvp in args)
+                {
+                    arguments[kvp.Key] = kvp.Value;
                 }
             }
-            throw new InvalidOperationException($"Unknown tool '{context.Params?.Name}'");
+
+            var resultObj = await _forwardCall.InvokeAsync(arguments, token);
+
+            var content = new Content
+            {
+                Type = "text",
+                Text = resultObj switch
+                {
+                    string str => str,
+                    JsonElement json => json.ToString(),
+                    _ => JsonSerializer.Serialize(resultObj)
+                }
+            };
+
+            return new() { Content = [content] };
+        }
+
+        /// <summary>
+        /// 通知数据库中的数据发生了变化
+        /// </summary>
+        public void NotifyDataChanged()
+        {
+            logger.LogInformation("数据库中的数据发生了变化，通知 MCP 客户端 Tool list 发生了变动");
+            UnsafeMcpServerPrimitiveCollection<McpServerTool>.RaiseChanged(_tools!.ToolCollection!);
+        }
+
+        private static Tool T2t(McpTool tool)
+        {
+            return new Tool
+            {
+                Name = $"{tool.Import.Name}_{tool.Name}",
+                Description = tool.Description,
+                InputSchema = JsonDocument.Parse(tool.InputSchema).RootElement,
+                Annotations = new() { OpenWorldHint = true }
+            };
+        }
+
+        private static async Task<string> ForwardCallAsync(AIFunctionArguments arguments, JsonElement? parameters = null)
+        {
+            if (arguments.Context is not { } context || !context.TryGetValue(MAP_KEY, out var toolObj) || toolObj is not McpTool tool)
+            {
+                throw new InvalidOperationException($"无法从 arguments 中获取 McpTool");
+            }
+
+            var httpClientFactory = arguments.Services!.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient();
+
+            var message = HttpRequestBuilder.Build(httpClient, tool, parameters);
+
+            var response = await httpClient.SendAsync(message);
+            var content = await response.Content.ReadAsStringAsync();
+
+            return content;
+        }
+
+        private class HttpRequestBuilder
+        {
+            public static HttpRequestMessage Build(HttpClient httpClient, McpTool tool, JsonElement? parameters)
+            {
+                var request = new HttpRequestMessage();
+
+                request.Method = new HttpMethod(tool.HttpMethod);
+
+                var requestPath = tool.RequestPath;
+
+                requestPath = ProcessPath(requestPath, parameters);
+
+                var queryParams = ProcessQuery(parameters);
+
+                request.RequestUri = new Uri(BuildUrl(requestPath, queryParams, tool));
+
+                ProcessHeader(request, parameters);
+
+                ProcessJson(request, parameters);
+
+                ProcessForm(request, parameters);
+
+                return request;
+            }
+
+            private static string BuildUrl(string requestPath, List<string>? queryParameters, McpTool tool)
+            {
+                var baseUrl = tool.Import.SourceBaseUrl.TrimEnd('/');
+                var url = $"{baseUrl}/{requestPath.TrimStart('/')}";
+                if (queryParameters?.Count > 0)
+                {
+                    url += $"?{string.Join("&", queryParameters)}";
+                }
+
+                return url;
+            }
+
+            private static string ProcessPath(string requestPath, JsonElement? parameters)
+            {
+                if (parameters is null || !parameters.Value.TryGetProperty("path", out var pathParameters)) return requestPath;
+
+                foreach (var param in pathParameters.EnumerateObject())
+                {
+                    requestPath = requestPath.Replace($"{{{param.Name}}}", param.Value.ToString());
+                }
+
+                return requestPath;
+            }
+
+            private static List<string>? ProcessQuery(JsonElement? parameters)
+            {
+                if (parameters is null || !parameters.Value.TryGetProperty("query", out var queryParameters)) return null;
+
+                var queryParams = new List<string>();
+
+                foreach (var param in queryParameters.EnumerateObject())
+                {
+                    queryParams.Add($"{param.Name}={Uri.EscapeDataString(param.Value.ToString())}");
+                }
+
+                return queryParams;
+            }
+
+            private static void ProcessHeader(HttpRequestMessage request, JsonElement? parameters)
+            {
+                if (parameters is null || !parameters.Value.TryGetProperty("header", out var headerParameters)) return;
+
+                foreach (var header in headerParameters.EnumerateObject())
+                {
+                    request.Headers.Add(header.Name, header.Value.ToString());
+                }
+            }
+
+            private static void ProcessJson(HttpRequestMessage request, JsonElement? parameters)
+            {
+                if (parameters is null || !parameters.Value.TryGetProperty("json", out var json)) return;
+
+                request.Content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+            }
+
+            private static void ProcessForm(HttpRequestMessage request, JsonElement? parameters)
+            {
+                if (parameters is null || !parameters.Value.TryGetProperty("form", out var form)) return;
+
+                var kvp = form.EnumerateObject().Select(p => new KeyValuePair<string, string>(p.Name, p.Value.ToString()));
+                request.Content = new FormUrlEncodedContent(kvp);
+            }
         }
     }
 }

@@ -1,13 +1,16 @@
-﻿################################################################################
+################################################################################
 # 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
 ################################################################################
 
-/src/MCPP.Net/.vs
-/src/MCPP.Net/bin/Debug/net8.0
-/src/MCPP.Net/obj
-/src/MCPP.Net/Properties
+[Bb]in/
+[Oo]bj/
+.vs/
+
 /src/MCPP.Net/appsettings.Development.json
 /src/MCPP.Net/ImportedSwaggers
 /src/MCPP.Net/ImportedTools
 /src/MCPP.Net/Services/SwaggerImportService.cs
-/.vs
+
+# 忽略 Data 目录中除了 .gitkeep 以外的所有文件
+/src/MCPP.Net/Data/*
+!/src/MCPP.Net/Data/.gitkeep

@@ -15,7 +15,6 @@ namespace MCPP.Net.Core
 
             toolsKeeper.SetTools(options.Capabilities.Tools);
 
-            options.Capabilities.Tools.ToolCollection = [];
             options.Capabilities.Tools.ListToolsHandler = toolsKeeper.ListToolsHandler;
             options.Capabilities.Tools.CallToolHandler = toolsKeeper.CallToolHandler;
         }

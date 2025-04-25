@@ -1,4 +1,4 @@
-using MCPP.Net.Models;
+using MCPP.Net.Models.Import;
 using MCPP.Net.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,90 +8,98 @@ namespace MCPP.Net.Controllers
     /// Swagger导入API控制器
     /// </summary>
     [ApiController]
-    [Route("api/[controller]/[action]")]
-    public class ImportController : ControllerBase
+    [Route("api/imports")]
+    public class ImportController(IImportService importService) : ControllerBase
     {
-        private readonly ILogger<ImportController> _logger;
-        private readonly SwaggerImportService _importService;
-
-        public ImportController(
-            ILogger<ImportController> logger,
-            SwaggerImportService importService)
-        {
-            _logger = logger;
-            _importService = importService;
-        }
-
         /// <summary>
-        /// 导入Swagger API并动态注册为MCP工具
+        /// swagger 导入
         /// </summary>
-        /// <param name="request">导入请求参数(包含SwaggerUrl和可选的SourceBaseUrl)</param>
-        /// <returns>导入结果</returns>
         [HttpPost]
-        public async Task<IActionResult> Import([FromBody] SwaggerImportRequest request)
+        public async Task<IActionResult> Import([FromBody] CreateImportRequest request)
         {
-            try
-            {
-                _logger.LogInformation("开始导入Swagger API: {Url}, 源服务器URL: {SourceUrl}", 
-                    request.SwaggerUrl, 
-                    string.IsNullOrEmpty(request.SourceBaseUrl) ? "(未提供)" : request.SourceBaseUrl);
-               
-                var result = await _importService.ImportSwaggerAsync(request);
-                
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "导入Swagger API失败: {Message}", ex.Message);
-                return BadRequest(new { error = ex.Message });
-            }
+            var response = await importService.ImportAsync(request);
+
+            return Ok(response);
         }
 
         /// <summary>
-        /// 获取当前已导入的所有API工具
+        /// 查询所有 import.
         /// </summary>
-        /// <returns>已导入的API工具列表</returns>
         [HttpGet]
-        public IActionResult GetImportedTools()
+        public async Task<IActionResult> List()
         {
-            try
-            {
-                var tools = _importService.GetImportedTools();
-                return Ok(tools);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "获取已导入工具失败: {Message}", ex.Message);
-                return BadRequest(new { error = ex.Message });
-            }
+            var datas = await importService.ListAsync();
+
+            return Ok(datas);
         }
-        
+
         /// <summary>
-        /// 删除已导入的API工具
+        /// 查询单个 import
         /// </summary>
-        /// <param name="nameSpace">工具命名空间</param>
-        /// <param name="className">类名</param>
-        /// <returns>操作结果</returns>
-        [HttpDelete]
-        public IActionResult DeleteImportedTool(string nameSpace, string className)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(long id)
         {
-            try
-            {
-                bool result = _importService.DeleteImportedTool(nameSpace, className);
-                if (result)
-                {
-                    return Ok(new { success = true, message = $"已删除工具: {nameSpace}.{className}" });
-                }
-                else
-                {
-                    return NotFound(new { success = false, message = $"未找到工具: {nameSpace}.{className}" });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "删除已导入工具失败: {Message}", ex.Message);
-                return BadRequest(new { error = ex.Message });
-            }
+            var data = await importService.GetAsync(id);
+
+            return Ok(data);
+        }
+
+        /// <summary>
+        /// 更新 import
+        /// </summary>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(long id, [FromBody] UpdateImportRequest request)
+        {
+            await importService.UpdateAsync(request);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 删除 import
+        /// </summary>
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            await importService.DeleteAsync(id);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 启用 import
+        /// </summary>
+        [HttpPost("{id}/enable")]
+        public async Task<IActionResult> Enable(long id)
+        {
+            await importService.SetEnabledAsync(id, true);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 禁用 import
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost("{id}/disable")]
+        public async Task<IActionResult> Disable(long id)
+        {
+            await importService.SetEnabledAsync(id, false);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// 重新导入
+        /// </summary>
+        [HttpPost("{id}/reimport")]
+        public async Task<IActionResult> Reimport(long id)
+        {
+            await importService.ReimportAsync(id);
+
+            return Ok();
         }
     }
 } 
